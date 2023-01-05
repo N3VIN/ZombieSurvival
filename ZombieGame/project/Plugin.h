@@ -2,6 +2,10 @@
 #include "IExamPlugin.h"
 #include "Exam_HelperStructs.h"
 
+#include "EDecisionMaking.h"
+#include "EBehaviorTree.h"
+#include "EBlackboard.h"
+
 class IBaseInterface;
 class IExamInterface;
 
@@ -27,6 +31,9 @@ private:
 	std::vector<HouseInfo> GetHousesInFOV() const;
 	std::vector<EntityInfo> GetEntitiesInFOV() const;
 
+	void UpdateEntitiesInFOV();
+
+
 	Elite::Vector2 m_Target = {};
 	bool m_CanRun = false; //Demo purpose
 	bool m_GrabItem = false; //Demo purpose
@@ -35,6 +42,15 @@ private:
 	float m_AngSpeed = 0.f; //Demo purpose
 
 	UINT m_InventorySlot = 0;
+
+	Elite::BehaviorTree* m_pBehaviorTree{nullptr};
+	SteeringPlugin_Output* m_pSteeringOutputData;
+
+	std::vector<ItemInfo>* m_pItemsInFOV;
+	std::vector<EnemyInfo>* m_pEnemiesInFOV;
+	std::vector<PurgeZoneInfo>* m_pPurgeZoneInFOV;
+
+
 };
 
 //ENTRY

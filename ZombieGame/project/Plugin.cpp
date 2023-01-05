@@ -2,7 +2,14 @@
 #include "Plugin.h"
 #include "IExamInterface.h"
 
+#include "Behaviors.h"
+
+
 using namespace std;
+using namespace Elite;
+
+//#define DEMO_STEERING
+
 
 //Called only once, during initialization
 void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
@@ -17,6 +24,45 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	info.Student_FirstName = "Nevin";
 	info.Student_LastName = "Amarendranath";
 	info.Student_Class = "2DAE07";
+
+	//..
+
+	m_pSteeringOutputData = new SteeringPlugin_Output();
+
+	m_pItemsInFOV = new std::vector<ItemInfo>();
+	m_pEnemiesInFOV = new std::vector<EnemyInfo>();
+	m_pPurgeZoneInFOV = new std::vector<PurgeZoneInfo>();
+
+	Blackboard* pBlackboard = new Blackboard();
+	pBlackboard->AddData("steering", m_pSteeringOutputData);
+	pBlackboard->AddData("interface", (m_pInterface));
+	pBlackboard->AddData("itemsInFOV", m_pItemsInFOV);
+	pBlackboard->AddData("enemiesInFOV", m_pEnemiesInFOV);
+	pBlackboard->AddData("purgeZoneInFOV", m_pPurgeZoneInFOV);
+
+	m_pBehaviorTree = new BehaviorTree(pBlackboard, new BehaviorGroup
+	(
+{
+		// Selector node for the world.
+		new BehaviorSelector
+		(
+			{
+				new BehaviorSequence
+				(
+					{
+					new BehaviorConditional(&BT_Conditions::IsEnemyInView),
+					new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
+						}
+				),
+
+				// Action node to wander.
+			new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
+			}
+		)
+		}
+	));
+
+
 }
 
 //Called only once
@@ -29,6 +75,9 @@ void Plugin::DllInit()
 void Plugin::DllShutdown()
 {
 	//Called wheb the plugin gets unloaded
+
+	SAFE_DELETE(m_pBehaviorTree);
+	SAFE_DELETE(m_pSteeringOutputData);
 }
 
 //Called only once, during initialization
@@ -118,8 +167,16 @@ void Plugin::Update(float dt)
 //This function calculates the new SteeringOutput, called once per frame
 SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 {
-	auto steering = SteeringPlugin_Output();
-	
+	UpdateEntitiesInFOV();
+
+	SteeringPlugin_Output* pSteering;
+
+	m_pBehaviorTree->Update(dt);
+
+	m_pBehaviorTree->GetBlackboard()->GetData("steering", pSteering);
+
+
+#ifdef DEMO_STEERING
 	//Use the Interface (IAssignmentInterface) to 'interface' with the AI_Framework
 	auto agentInfo = m_pInterface->Agent_GetInfo();
 
@@ -195,7 +252,9 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 	m_UseItem = false;
 	m_RemoveItem = false;
 
-	return steering;
+#endif
+
+	return *pSteering;
 }
 
 //This function should only be used for rendering debug elements
@@ -241,4 +300,35 @@ vector<EntityInfo> Plugin::GetEntitiesInFOV() const
 	}
 
 	return vEntitiesInFOV;
+}
+
+void Plugin::UpdateEntitiesInFOV()
+{
+	std::vector<EntityInfo> entitesInFOV = GetEntitiesInFOV();
+
+	for(const auto& entity : entitesInFOV)
+	{
+		if (entity.Type == eEntityType::ENEMY)
+		{
+			EnemyInfo enemyInfo{};
+			m_pInterface->Enemy_GetInfo(entity, enemyInfo);
+			m_pEnemiesInFOV->push_back(enemyInfo);
+		}
+		if(entity.Type == eEntityType::ITEM)
+		{
+			ItemInfo itemInfo{};
+			m_pInterface->Item_GetInfo(entity, itemInfo);
+			m_pItemsInFOV->push_back(itemInfo);
+		}
+		if (entity.Type == eEntityType::PURGEZONE)
+		{
+			PurgeZoneInfo purgeZoneInfo{};
+			m_pInterface->PurgeZone_GetInfo(entity, purgeZoneInfo);
+			m_pPurgeZoneInFOV->push_back(purgeZoneInfo);
+		}
+	}
+
+	m_pBehaviorTree->GetBlackboard()->ChangeData("itemsInFOV", m_pItemsInFOV);
+	m_pBehaviorTree->GetBlackboard()->ChangeData("enemiesInFOV", m_pEnemiesInFOV);
+	m_pBehaviorTree->GetBlackboard()->ChangeData("purgeZoneInFOV", m_pPurgeZoneInFOV);
 }
