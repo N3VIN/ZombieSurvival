@@ -135,7 +135,7 @@ namespace BT_Conditions
 
 		if (!pEnemyInfos->empty())
 		{
-			return false;
+			return true;
 		}
 
 		return false;

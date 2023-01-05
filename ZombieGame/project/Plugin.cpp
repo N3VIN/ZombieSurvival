@@ -56,7 +56,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 				),
 
 				// Action node to wander.
-			new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
+			new BehaviorAction(&BT_Behaviors::Wander)
 			}
 		)
 		}
