@@ -32,6 +32,8 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pItemsInFOV = new std::vector<ItemInfo>();
 	m_pEnemiesInFOV = new std::vector<EnemyInfo>();
 	m_pPurgeZoneInFOV = new std::vector<PurgeZoneInfo>();
+	m_pHousesInFov = new std::vector<HouseInfo>();
+	m_pHousesChecked = new std::vector<HouseInfo>();
 
 	Blackboard* pBlackboard = new Blackboard();
 	pBlackboard->AddData("steering", m_pSteeringOutputData);
@@ -39,6 +41,8 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	pBlackboard->AddData("itemsInFOV", m_pItemsInFOV);
 	pBlackboard->AddData("enemiesInFOV", m_pEnemiesInFOV);
 	pBlackboard->AddData("purgeZoneInFOV", m_pPurgeZoneInFOV);
+	pBlackboard->AddData("housesInFOV", m_pHousesInFov);
+	pBlackboard->AddData("housesChecked", m_pHousesChecked);
 
 	m_pBehaviorTree = new BehaviorTree(pBlackboard, new BehaviorGroup
 	(
@@ -50,9 +54,42 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 				new BehaviorSequence
 				(
 					{
+						// checks if enemy is in FOV.
 					new BehaviorConditional(&BT_Conditions::IsEnemyInView),
+						// flee fom enemy.
 					new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
 						}
+				),
+				new BehaviorSequence
+				(
+					{
+						// checks if inside house.
+					new BehaviorConditional(&BT_Conditions::IsInsideHouse),
+					// Add to houses checked.
+					new BehaviorAction(&BT_Behaviors::AddToHousesChecked),
+					// Exit house.
+					new BehaviorAction(&BT_Behaviors::Wander)
+					}
+			    ),
+				new BehaviorSequence
+				(
+					{
+						// checks if house is in FOV.
+					new BehaviorConditional(&BT_Conditions::IsHouseInView),
+						// seek house.
+					new BehaviorAction(&BT_Behaviors::SeekHouse)
+					}
+				),
+				
+				new BehaviorSequence
+				(
+					{
+						// was bitten.
+						new BehaviorConditional(&BT_Conditions::IsBitten),
+						// turn around.
+						new BehaviorAction(&BT_Behaviors::TurnAround)
+
+					}
 				),
 
 				// Action node to wander.
@@ -168,6 +205,7 @@ void Plugin::Update(float dt)
 SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 {
 	UpdateEntitiesInFOV();
+	UpdateHousesInFOV();
 
 	SteeringPlugin_Output* pSteering;
 
@@ -331,4 +369,20 @@ void Plugin::UpdateEntitiesInFOV()
 	m_pBehaviorTree->GetBlackboard()->ChangeData("itemsInFOV", m_pItemsInFOV);
 	m_pBehaviorTree->GetBlackboard()->ChangeData("enemiesInFOV", m_pEnemiesInFOV);
 	m_pBehaviorTree->GetBlackboard()->ChangeData("purgeZoneInFOV", m_pPurgeZoneInFOV);
+}
+
+void Plugin::UpdateHousesInFOV()
+{
+	std::vector<HouseInfo> housesInFOV = GetHousesInFOV();
+	m_pHousesInFov->clear();
+	//m_pHousesInFov = &housesInFOV;
+
+	//m_pHousesInFov = &GetHousesInFOV();
+
+	for(auto house : housesInFOV)
+	{
+		m_pHousesInFov->push_back(house);
+	}
+
+	m_pBehaviorTree->GetBlackboard()->ChangeData("housesInFOV", m_pHousesInFov);
 }

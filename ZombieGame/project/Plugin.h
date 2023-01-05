@@ -32,6 +32,7 @@ private:
 	std::vector<EntityInfo> GetEntitiesInFOV() const;
 
 	void UpdateEntitiesInFOV();
+	void UpdateHousesInFOV();
 
 
 	Elite::Vector2 m_Target = {};
@@ -49,6 +50,8 @@ private:
 	std::vector<ItemInfo>* m_pItemsInFOV;
 	std::vector<EnemyInfo>* m_pEnemiesInFOV;
 	std::vector<PurgeZoneInfo>* m_pPurgeZoneInFOV;
+	std::vector<HouseInfo>* m_pHousesInFov;
+	std::vector<HouseInfo>* m_pHousesChecked;
 
 
 };
