@@ -4,14 +4,14 @@
 Inventory::Inventory(IExamInterface* pInterface)
 	: m_pInterface{pInterface}
 {
-	m_pInventory.reserve(m_pInterface->Inventory_GetCapacity());
+	m_Inventory.reserve(m_pInterface->Inventory_GetCapacity());
 
 	for (int i{}; i < m_pInterface->Inventory_GetCapacity(); ++i)
 	{
-		m_pInventory.push_back(eItemType::RANDOM_DROP);
+		m_Inventory.push_back(eItemType::RANDOM_DROP);
 	}
 
-	//m_pInventory. eItemType::RANDOM_DROP;
+	//m_Inventory. eItemType::RANDOM_DROP;
 
 }
 
@@ -46,15 +46,64 @@ bool Inventory::PickupItem(EntityInfo entityInfo)
 	}
 
 	m_pInterface->Inventory_AddItem(emptySlotId, itemInfo);
-	m_pInventory.at(emptySlotId) = itemInfo.Type;
+	m_Inventory.at(emptySlotId) = itemInfo.Type;
+	return true;
+}
+
+bool Inventory::UseGun()
+{
+	if (!IsGunAvailable())
+	{
+		return false;
+	}
+
+	UINT slotID{};
+	for (int i{}; i < m_Inventory.size(); ++i)
+	{
+		if (m_Inventory.at(i) == eItemType::SHOTGUN)
+		{
+			slotID = i;
+		}
+		else if (m_Inventory.at(i) == eItemType::PISTOL)
+		{
+			slotID = i;
+		}
+	}
+
+	//UINT gunIdx{ static_cast<UINT>(std::distance(m_Inventory.begin(),gunIterator)) };
+	m_pInterface->Inventory_UseItem(slotID);
+
+	ItemInfo itemInfo{};
+	if (m_pInterface->Inventory_GetItem(slotID, itemInfo))
+	{
+		if (m_pInterface->Weapon_GetAmmo(itemInfo) <= 0)
+		{
+			m_pInterface->Inventory_RemoveItem(slotID);
+			m_Inventory.at(slotID) = eItemType::RANDOM_DROP;
+		}
+	}
+
 	return true;
 }
 
 bool Inventory::IsInventoryFull() const
 {
-	return std::all_of(m_pInventory.begin(), m_pInventory.end(), [](eItemType itemType)
+	return std::all_of(m_Inventory.begin(), m_Inventory.end(), [](eItemType itemType)
 		{
 			return itemType != eItemType::RANDOM_DROP;
 		}
 	);
+}
+
+bool Inventory::IsGunAvailable() const
+{
+	for (int i{}; i < m_Inventory.size(); ++i)
+	{
+		if (m_Inventory.at(i) == eItemType::PISTOL || m_Inventory.at(i) == eItemType::SHOTGUN)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

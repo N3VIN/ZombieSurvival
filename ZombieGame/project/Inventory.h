@@ -16,12 +16,14 @@ public:
 	Inventory& operator=(Inventory&& Inventory) = delete;
 
 	bool PickupItem(EntityInfo entityInfo);
+	bool UseGun();
 
 	bool IsInventoryFull() const;
+	bool IsGunAvailable() const;
 
 private:
 
 	IExamInterface* m_pInterface{};
-	std::vector<eItemType> m_pInventory{ };
+	std::vector<eItemType> m_Inventory{ };
 
 };

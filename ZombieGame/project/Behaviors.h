@@ -137,6 +137,19 @@ namespace BT_Conditions
 		//return pInterface->Agent_GetInfo().IsInHouse;
 	}
 
+	bool IsGunAvailable(Elite::Blackboard* pBlackboard)
+	{
+		Inventory* pInventory{ nullptr };
+
+		if (!pBlackboard->GetData("inventory", pInventory) || pInventory == nullptr)
+		{
+			return false;
+		}
+
+		return pInventory->IsGunAvailable();
+
+	}
+
 }
 
 
@@ -447,7 +460,61 @@ namespace BT_Behaviors
 		return Elite::BehaviorState::Success;
 	}
 
+	Elite::BehaviorState Shoot(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		SteeringPlugin_Output* pSteering{};
+		std::vector<EnemyInfo>* pEnemyInfos{ nullptr };
+		Inventory* pInventory{ nullptr };
 
+		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("enemiesInFOV", pEnemyInfos) || pEnemyInfos == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("inventory", pInventory) || pInventory == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		auto agentInfo = pInterface->Agent_GetInfo();
+
+		EnemyInfo enemy{};
+		for (int i{ 0 }; i < pEnemyInfos->size(); ++i)
+		{
+			enemy = pEnemyInfos->at(i);
+		}
+
+		Elite::Vector2 enemyDirection = (enemy.Location - agentInfo.Position);
+
+		if (std::abs(agentInfo.Orientation - std::atan2(enemyDirection.y, enemyDirection.x)) < 0.05f)
+		{
+			// If we're oriented to the closest enemy, shoot it
+			if (pInventory->UseGun())
+			{
+				return Elite::BehaviorState::Success;
+			}
+			return Elite::BehaviorState::Failure;
+		}
+
+		enemyDirection.Normalize();
+		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
+		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
+		pSteering->AngularVelocity = (enemyDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
+
+		return Elite::BehaviorState::Success;
+
+	}
 
 }
 

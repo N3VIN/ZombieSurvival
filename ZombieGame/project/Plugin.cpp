@@ -59,7 +59,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						// checks if item is in FOV.
 					new BehaviorConditional(&BT_Conditions::IsItemInView),
 					// Pickup items in FOV.
-				new BehaviorAction(&BT_Behaviors::PickupItemsFOV)
+					new BehaviorAction(&BT_Behaviors::PickupItemsFOV)
 					}
 				),
 
@@ -68,9 +68,25 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					{
 						// checks if enemy is in FOV.
 					new BehaviorConditional(&BT_Conditions::IsEnemyInView),
-						// flee fom enemy.
-					new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
-						}
+
+						new BehaviorSelector
+						(
+							{
+								new BehaviorSequence
+								(
+									{
+										// If gun is available.
+										new BehaviorConditional(&BT_Conditions::IsGunAvailable),
+										// Shoot.
+										new BehaviorAction(&BT_Behaviors::Shoot)
+									}
+									// else
+								),
+								// flee fom enemy.
+								new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
+							}
+						)
+					}
 				),
 				
 				new BehaviorSequence
