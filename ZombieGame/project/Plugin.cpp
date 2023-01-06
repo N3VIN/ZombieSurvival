@@ -29,11 +29,12 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 
 	m_pSteeringOutputData = new SteeringPlugin_Output();
 
-	m_pItemsInFOV = new std::vector<ItemInfo>();
+	m_pItemsInFOV = new std::vector<EntityInfo>();
 	m_pEnemiesInFOV = new std::vector<EnemyInfo>();
 	m_pPurgeZoneInFOV = new std::vector<PurgeZoneInfo>();
 	m_pHousesInFov = new std::vector<HouseInfo>();
 	m_pHousesChecked = new std::vector<HouseInfo>();
+	m_pInventory = new Inventory(m_pInterface);
 
 	Blackboard* pBlackboard = new Blackboard();
 	pBlackboard->AddData("steering", m_pSteeringOutputData);
@@ -43,6 +44,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	pBlackboard->AddData("purgeZoneInFOV", m_pPurgeZoneInFOV);
 	pBlackboard->AddData("housesInFOV", m_pHousesInFov);
 	pBlackboard->AddData("housesChecked", m_pHousesChecked);
+	pBlackboard->AddData("inventory", m_pInventory);
 
 	m_pBehaviorTree = new BehaviorTree(pBlackboard, new BehaviorGroup
 	(
@@ -54,31 +56,21 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 				new BehaviorSequence
 				(
 					{
+						// checks if item is in FOV.
+					new BehaviorConditional(&BT_Conditions::IsItemInView),
+					// Pickup items in FOV.
+				new BehaviorAction(&BT_Behaviors::PickupItemsFOV)
+					}
+				),
+
+				new BehaviorSequence
+				(
+					{
 						// checks if enemy is in FOV.
 					new BehaviorConditional(&BT_Conditions::IsEnemyInView),
 						// flee fom enemy.
 					new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
 						}
-				),
-				new BehaviorSequence
-				(
-					{
-						// checks if inside house.
-					new BehaviorConditional(&BT_Conditions::IsInsideHouse),
-					// Add to houses checked.
-					new BehaviorAction(&BT_Behaviors::AddToHousesChecked),
-					// Exit house.
-					new BehaviorAction(&BT_Behaviors::Wander)
-					}
-			    ),
-				new BehaviorSequence
-				(
-					{
-						// checks if house is in FOV.
-					new BehaviorConditional(&BT_Conditions::IsHouseInView),
-						// seek house.
-					new BehaviorAction(&BT_Behaviors::SeekHouse)
-					}
 				),
 				
 				new BehaviorSequence
@@ -91,6 +83,30 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 
 					}
 				),
+
+				new BehaviorSequence
+				(
+					{
+						// checks if inside house.
+					new BehaviorConditional(&BT_Conditions::IsInsideHouse),
+					// Add to houses checked.
+					new BehaviorAction(&BT_Behaviors::AddToHousesChecked),
+					// Wander inside house.
+					new BehaviorAction(&BT_Behaviors::Wander)
+					}
+			    ),
+
+				new BehaviorSequence
+				(
+					{
+						// checks if house is in FOV.
+					new BehaviorConditional(&BT_Conditions::IsHouseInView),
+						// seek house.
+					new BehaviorAction(&BT_Behaviors::SeekHouse)
+					}
+				),
+				
+				
 
 				// Action node to wander.
 			new BehaviorAction(&BT_Behaviors::Wander)
@@ -134,7 +150,8 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnPurgeZonesOnMiddleClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 36;
+	//params.Seed = 36;
+	params.Seed = 124;
 }
 
 //Only Active in DEBUG Mode
@@ -344,6 +361,10 @@ void Plugin::UpdateEntitiesInFOV()
 {
 	std::vector<EntityInfo> entitesInFOV = GetEntitiesInFOV();
 
+	m_pEnemiesInFOV->clear();
+	m_pItemsInFOV->clear();
+	m_pPurgeZoneInFOV->clear();
+
 	for(const auto& entity : entitesInFOV)
 	{
 		if (entity.Type == eEntityType::ENEMY)
@@ -354,9 +375,7 @@ void Plugin::UpdateEntitiesInFOV()
 		}
 		if(entity.Type == eEntityType::ITEM)
 		{
-			ItemInfo itemInfo{};
-			m_pInterface->Item_GetInfo(entity, itemInfo);
-			m_pItemsInFOV->push_back(itemInfo);
+			m_pItemsInFOV->push_back(entity);
 		}
 		if (entity.Type == eEntityType::PURGEZONE)
 		{

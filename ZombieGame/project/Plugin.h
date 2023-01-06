@@ -5,6 +5,7 @@
 #include "EDecisionMaking.h"
 #include "EBehaviorTree.h"
 #include "EBlackboard.h"
+#include "Inventory.h"
 
 class IBaseInterface;
 class IExamInterface;
@@ -47,11 +48,12 @@ private:
 	Elite::BehaviorTree* m_pBehaviorTree{nullptr};
 	SteeringPlugin_Output* m_pSteeringOutputData;
 
-	std::vector<ItemInfo>* m_pItemsInFOV;
+	std::vector<EntityInfo>* m_pItemsInFOV;
 	std::vector<EnemyInfo>* m_pEnemiesInFOV;
 	std::vector<PurgeZoneInfo>* m_pPurgeZoneInFOV;
 	std::vector<HouseInfo>* m_pHousesInFov;
 	std::vector<HouseInfo>* m_pHousesChecked;
+	Inventory* m_pInventory;
 
 
 };
