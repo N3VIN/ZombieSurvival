@@ -179,6 +179,47 @@ namespace BT_Conditions
 
 	}
 
+	bool IsMedKitAvailable(Elite::Blackboard* pBlackboard)
+	{
+		Inventory* pInventory{ nullptr };
+
+		if (!pBlackboard->GetData("inventory", pInventory) || pInventory == nullptr)
+		{
+			return false;
+		}
+
+		return pInventory->IsItemAvailable(eItemType::MEDKIT);
+
+	}
+
+	bool IsNeedMedKit(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		Inventory* pInventory{ nullptr };
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return false;
+		}
+
+		if (!pBlackboard->GetData("inventory", pInventory) || pInventory == nullptr)
+		{
+			return false;
+		}
+
+		auto currentHealth = pInterface->Agent_GetInfo().Health;
+
+		if (currentHealth <= 8)
+		{
+			if (IsMedKitAvailable(pBlackboard))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 }
 
 
@@ -564,6 +605,23 @@ namespace BT_Behaviors
 
 		return Elite::BehaviorState::Success;
 
+	}
+
+	Elite::BehaviorState UseMedKit(Elite::Blackboard* pBlackboard)
+	{
+		Inventory* pInventory{ nullptr };
+
+		if (!pBlackboard->GetData("inventory", pInventory) || pInventory == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (pInventory->UseMedKit())
+		{
+			return Elite::BehaviorState::Success;
+		}
+
+		return Elite::BehaviorState::Failure;
 	}
 
 }

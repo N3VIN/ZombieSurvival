@@ -72,13 +72,43 @@ bool Inventory::UseGun()
 		}
 	}
 
-	//UINT gunIdx{ static_cast<UINT>(std::distance(m_Inventory.begin(),gunIterator)) };
 	m_pInterface->Inventory_UseItem(slotID);
 
 	ItemInfo itemInfo{};
 	if (m_pInterface->Inventory_GetItem(slotID, itemInfo))
 	{
 		if (m_pInterface->Weapon_GetAmmo(itemInfo) <= 0)
+		{
+			m_pInterface->Inventory_RemoveItem(slotID);
+			m_Inventory.at(slotID) = eItemType::RANDOM_DROP;
+		}
+	}
+
+	return true;
+}
+
+bool Inventory::UseMedKit()
+{
+	if (!IsItemAvailable(eItemType::MEDKIT))
+	{
+		return false;
+	}
+
+	UINT slotID{};
+	for (int i{}; i < m_Inventory.size(); ++i)
+	{
+		if (m_Inventory.at(i) == eItemType::MEDKIT)
+		{
+			slotID = i;
+		}
+	}
+
+	m_pInterface->Inventory_UseItem(slotID);
+
+	ItemInfo itemInfo{};
+	if (m_pInterface->Inventory_GetItem(slotID, itemInfo))
+	{
+		if (m_pInterface->Medkit_GetHealth(itemInfo) <= 0)
 		{
 			m_pInterface->Inventory_RemoveItem(slotID);
 			m_Inventory.at(slotID) = eItemType::RANDOM_DROP;
@@ -102,6 +132,19 @@ bool Inventory::IsGunAvailable() const
 	for (int i{}; i < m_Inventory.size(); ++i)
 	{
 		if (m_Inventory.at(i) == eItemType::PISTOL || m_Inventory.at(i) == eItemType::SHOTGUN)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool Inventory::IsItemAvailable(eItemType itemType) const
+{
+	for (int i{}; i < m_Inventory.size(); ++i)
+	{
+		if (m_Inventory.at(i) == itemType)
 		{
 			return true;
 		}

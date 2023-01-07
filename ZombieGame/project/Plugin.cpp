@@ -53,47 +53,47 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 
 	m_pBehaviorTree = new BehaviorTree(pBlackboard, new BehaviorGroup
 	(
-{
-		// Selector node for the world.
-		new BehaviorSelector
-		(
-			{
-				new BehaviorSequence
-				(
-					{
-						// checks if item is in FOV.
-					new BehaviorConditional(&BT_Conditions::IsItemInView),
-					// Pickup items in FOV.
-					new BehaviorAction(&BT_Behaviors::PickupItemsFOV)
-					}
-				),
+		{
+			// Selector node for the world.
+			new BehaviorSelector
+			(
+				{
+					new BehaviorSequence
+					(
+						{
+							// checks if item is in FOV.
+						new BehaviorConditional(&BT_Conditions::IsItemInView),
+						// Pickup items in FOV.
+						new BehaviorAction(&BT_Behaviors::PickupItemsFOV)
+						}
+					),
 
-				new BehaviorSequence
-				(
-					{
-						// checks if enemy is in FOV.
-					new BehaviorConditional(&BT_Conditions::IsEnemyInView),
+					new BehaviorSequence
+					(
+						{
+							// checks if enemy is in FOV.
+						new BehaviorConditional(&BT_Conditions::IsEnemyInView),
 
-						new BehaviorSelector
-						(
-							{
-								new BehaviorSequence
-								(
-									{
-										// If gun is available.
-										new BehaviorConditional(&BT_Conditions::IsGunAvailable),
-										// Shoot.
-										new BehaviorAction(&BT_Behaviors::Shoot)
-									}
-									// else
-								),
+							new BehaviorSelector
+							(
+								{
+									new BehaviorSequence
+									(
+										{
+											// If gun is available.
+											new BehaviorConditional(&BT_Conditions::IsGunAvailable),
+											// Shoot.
+											new BehaviorAction(&BT_Behaviors::Shoot)
+										}
+										// else
+									),
 								// flee fom enemy.
 								new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
 							}
 						)
 						}
 				),
-				
+
 				new BehaviorSequence
 				(
 					{
@@ -115,24 +115,38 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					// Wander inside house.
 					new BehaviorAction(&BT_Behaviors::Wander)
 					}
-			    ),
+				),
 
 				new BehaviorSequence
 				(
 					{
 						// checks if house is in FOV.
 					new BehaviorConditional(&BT_Conditions::IsHouseInView),
-						// seek house.
-					new BehaviorAction(&BT_Behaviors::SeekHouse)
-					}
-				),
-				
-				
+					// seek house.
+				new BehaviorAction(&BT_Behaviors::SeekHouse)
+				}
+			),
+
+
 
 				// Action node to wander.
 			new BehaviorAction(&BT_Behaviors::Wander)
 			}
-		)
+		),
+			new BehaviorSelector
+			(
+				{
+					new BehaviorSequence
+					(
+						{
+							new BehaviorConditional(&BT_Conditions::IsNeedMedKit),
+							new BehaviorAction(&BT_Behaviors::UseMedKit)
+						}
+					)
+				}
+			)
+
+
 		}
 	));
 
@@ -171,7 +185,7 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnPurgeZonesOnMiddleClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 36;
+	params.Seed = 3;
 	//params.Seed = 124;
 }
 

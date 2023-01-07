@@ -19,9 +19,11 @@ public:
 
 	bool PickupItem(EntityInfo entityInfo);
 	bool UseGun();
+	bool UseMedKit();
 
 	bool IsInventoryFull() const;
 	bool IsGunAvailable() const;
+	bool IsItemAvailable(eItemType itemType) const;
 
 	UINT GetFreeItemSlot() const;
 
