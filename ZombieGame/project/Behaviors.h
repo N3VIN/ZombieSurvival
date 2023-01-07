@@ -39,6 +39,7 @@ namespace BT_Conditions
 		return false;
 	}
 
+
 	bool IsHouseInView(Elite::Blackboard* pBlackboard)
 	{
 		std::vector<HouseInfo>* pHouseInfos{ nullptr };
@@ -76,8 +77,14 @@ namespace BT_Conditions
 	bool IsBitten(Elite::Blackboard* pBlackboard)
 	{
 		IExamInterface* pInterface{ nullptr };
-
+		Timer* pBittenTimer{ nullptr };
+		
 		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return false;
+		}
+
+		if (!pBlackboard->GetData("bittenTimer", pBittenTimer) || pBittenTimer == nullptr)
 		{
 			return false;
 		}
@@ -85,6 +92,11 @@ namespace BT_Conditions
 		auto agentInfo = pInterface->Agent_GetInfo();
 
 		if (agentInfo.WasBitten)
+		{
+			return true;
+		}
+
+		if (pBittenTimer->IsEnabled() && !pBittenTimer->IsDone())
 		{
 			return true;
 		}
@@ -268,13 +280,12 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
-		/*auto agentInfo = pInterface->Agent_GetInfo();
+		auto agentInfo = pInterface->Agent_GetInfo();
 
-		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
+		//const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
 
-		auto target = -pSteering->LinearVelocity;*/
+		//auto target = -pSteering->LinearVelocity;
 
-		//pSteering->AutoOrient = false;
 		//pSteering->AngularVelocity = agentRot * (agentInfo.MaxAngularSpeed * 10000000.f);
 
 		//pSteering->LinearVelocity = target - agentInfo.Position;
@@ -282,8 +293,10 @@ namespace BT_Behaviors
 		//pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
 
 		pSteering->AutoOrient = false;
-		//pSteering->LinearVelocity = Elite::ZeroVector2;
+		pSteering->LinearVelocity = Elite::ZeroVector2;
 		pSteering->AngularVelocity = pInterface->Agent_GetInfo().MaxAngularSpeed;
+
+
 
 		return Elite::BehaviorState::Success;
 	}

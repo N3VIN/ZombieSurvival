@@ -6,6 +6,7 @@
 #include "EBehaviorTree.h"
 #include "EBlackboard.h"
 #include "Inventory.h"
+#include "Timer.h"
 
 class IBaseInterface;
 class IExamInterface;
@@ -54,6 +55,9 @@ private:
 	std::vector<HouseInfo>* m_pHousesInFov;
 	std::vector<HouseInfo>* m_pHousesChecked;
 	Inventory* m_pInventory;
+	Timer* m_pBittenTimer;
+	float m_Health;
+
 
 
 };

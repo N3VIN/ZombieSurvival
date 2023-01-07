@@ -35,6 +35,9 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pHousesInFov = new std::vector<HouseInfo>();
 	m_pHousesChecked = new std::vector<HouseInfo>();
 	m_pInventory = new Inventory(m_pInterface);
+	m_pBittenTimer = new Timer(1.5f, false);
+	m_Health = 10;
+
 
 	Blackboard* pBlackboard = new Blackboard();
 	pBlackboard->AddData("steering", m_pSteeringOutputData);
@@ -45,6 +48,8 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	pBlackboard->AddData("housesInFOV", m_pHousesInFov);
 	pBlackboard->AddData("housesChecked", m_pHousesChecked);
 	pBlackboard->AddData("inventory", m_pInventory);
+	pBlackboard->AddData("bittenTimer", m_pBittenTimer);
+	pBlackboard->AddData("health", m_Health);
 
 	m_pBehaviorTree = new BehaviorTree(pBlackboard, new BehaviorGroup
 	(
@@ -86,7 +91,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 								new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
 							}
 						)
-					}
+						}
 				),
 				
 				new BehaviorSequence
@@ -243,8 +248,23 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 	SteeringPlugin_Output* pSteering;
 
 	m_pBehaviorTree->Update(dt);
+	m_pBittenTimer->Update(dt);
 
 	m_pBehaviorTree->GetBlackboard()->GetData("steering", pSteering);
+
+	float oldHealth{};
+	if (m_pBehaviorTree->GetBlackboard()->GetData("health", oldHealth))
+	{
+		float currentHealth{ m_pInterface->Agent_GetInfo().Health };
+		if (oldHealth > currentHealth)
+		{
+			m_pBittenTimer->Enable();
+			m_pBittenTimer->ResetTimer();
+			m_pBehaviorTree->GetBlackboard()->ChangeData("health", currentHealth);
+		}
+	}
+
+
 
 
 #ifdef DEMO_STEERING
