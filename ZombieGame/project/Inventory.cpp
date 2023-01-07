@@ -37,13 +37,15 @@ bool Inventory::PickupItem(EntityInfo entityInfo)
 	}
 
 	UINT emptySlotId{};
-	for (UINT i{ 0 }; i < m_pInterface->Inventory_GetCapacity(); ++i)
+	/*for (UINT i{ 0 }; i < m_pInterface->Inventory_GetCapacity(); ++i)
 	{
 		if (!m_pInterface->Inventory_GetItem(i, itemInfo))
 		{
 			emptySlotId = i;
 		}
-	}
+	}*/
+
+	emptySlotId = GetFreeItemSlot();
 
 	m_pInterface->Inventory_AddItem(emptySlotId, itemInfo);
 	m_Inventory.at(emptySlotId) = itemInfo.Type;
@@ -106,4 +108,18 @@ bool Inventory::IsGunAvailable() const
 	}
 
 	return false;
+}
+
+UINT Inventory::GetFreeItemSlot() const
+{
+	ItemInfo itemInfo;
+	for (UINT i{ 0 }; i < m_pInterface->Inventory_GetCapacity(); ++i)
+	{
+		if (!m_pInterface->Inventory_GetItem(i, itemInfo))
+		{
+			return i;
+		}
+	}
+
+	return invalid_inventory_slot;
 }

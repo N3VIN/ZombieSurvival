@@ -35,7 +35,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pHousesInFov = new std::vector<HouseInfo>();
 	m_pHousesChecked = new std::vector<HouseInfo>();
 	m_pInventory = new Inventory(m_pInterface);
-	m_pBittenTimer = new Timer(1.5f, false);
+	m_pBittenTimer = new Timer(1.25f, false);
 	m_Health = 10;
 
 
@@ -171,8 +171,8 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnPurgeZonesOnMiddleClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	//params.Seed = 36;
-	params.Seed = 124;
+	params.Seed = 36;
+	//params.Seed = 124;
 }
 
 //Only Active in DEBUG Mode

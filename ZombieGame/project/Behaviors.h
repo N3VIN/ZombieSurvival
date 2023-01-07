@@ -39,6 +39,23 @@ namespace BT_Conditions
 		return false;
 	}
 
+	/*bool IsEnemyNotInView(Elite::Blackboard* pBlackboard)
+	{
+		std::vector<EnemyInfo>* pEnemyInfos{ nullptr };
+
+		if (!pBlackboard->GetData("enemiesInFOV", pEnemyInfos) || pEnemyInfos == nullptr)
+		{
+			return false;
+		}
+
+		if (!pEnemyInfos->empty())
+		{
+			return ;
+		}
+
+		return false;
+	}*/
+
 
 	bool IsHouseInView(Elite::Blackboard* pBlackboard)
 	{
@@ -269,6 +286,8 @@ namespace BT_Behaviors
 	{
 		IExamInterface* pInterface{ nullptr };
 		SteeringPlugin_Output* pSteering{};
+		std::vector<EnemyInfo>* pEnemyInfos{ nullptr };
+
 
 		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
 		{
@@ -280,20 +299,31 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
+		if (!pBlackboard->GetData("enemiesInFOV", pEnemyInfos) || pEnemyInfos == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
 		auto agentInfo = pInterface->Agent_GetInfo();
 
-		//const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
+		EnemyInfo enemy{};
 
-		//auto target = -pSteering->LinearVelocity;
+		for (int i{ 0 }; i < pEnemyInfos->size(); ++i)
+		{
+			enemy = pEnemyInfos->at(i);
+		}
 
-		//pSteering->AngularVelocity = agentRot * (agentInfo.MaxAngularSpeed * 10000000.f);
+		Elite::Vector2 desiredDirection = -(enemy.Location - agentInfo.Position);
 
-		//pSteering->LinearVelocity = target - agentInfo.Position;
-		//pSteering->LinearVelocity.Normalize();
-		//pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		auto target = enemy.Location - desiredDirection.GetNormalized();
+
+		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+
+		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
+		pSteering->LinearVelocity.Normalize();
+		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
 
 		pSteering->AutoOrient = false;
-		pSteering->LinearVelocity = Elite::ZeroVector2;
 		pSteering->AngularVelocity = pInterface->Agent_GetInfo().MaxAngularSpeed;
 
 
@@ -357,12 +387,19 @@ namespace BT_Behaviors
 
 		auto target = house.Center;
 
+		auto targetDirection = target - agentInfo.Position;
+
 		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
 		pSteering->AutoOrient = false;
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+
+		targetDirection.Normalize();
+		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
+		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
+		pSteering->AngularVelocity = (targetDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
 
 		return Elite::BehaviorState::Success;
 

@@ -3,6 +3,8 @@
 #include "Exam_HelperStructs.h"
 #include "IExamInterface.h"
 
+#define invalid_inventory_slot 4294967295U
+
 class Inventory
 {
 public:
@@ -20,6 +22,8 @@ public:
 
 	bool IsInventoryFull() const;
 	bool IsGunAvailable() const;
+
+	UINT GetFreeItemSlot() const;
 
 private:
 

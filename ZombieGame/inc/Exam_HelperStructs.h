@@ -43,7 +43,7 @@ struct GameDebugParams //Debuggin Purposes only (Ignored during release build)
 	bool SpawnDebugPistol = false; // Spawns pistol with 1000 ammo at start
 	bool SpawnDebugShotgun = false; // Spawns shotgun with 1000 ammo at start
 	bool SpawnPurgeZonesOnMiddleClick = false; // Middle mouse clicks spawns purge zone
-	bool SpawnZombieOnRightClick = true; // Right mouse clicks spawns zombie
+	bool SpawnZombieOnRightClick = false; // Right mouse clicks spawns zombie
 	bool PrintDebugMessages = true;
 	bool ShowDebugItemNames = true;
 };
