@@ -460,7 +460,7 @@ namespace BT_Behaviors
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
 
-		pSteering->AutoOrient = true;
+		pSteering->AutoOrient = false;
 		//pSteering->RunMode = true;
 		pSteering->AngularVelocity = pInterface->Agent_GetInfo().MaxAngularSpeed;
 
@@ -819,6 +819,59 @@ namespace BT_Behaviors
 
 		return Elite::BehaviorState::Success;
 
+	}
+
+	Elite::BehaviorState CheckRightSideHouse(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		SteeringPlugin_Output* pSteering{};
+		std::vector<HouseInfo>* pHouseInfos{ nullptr };
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("housesInFOV", pHouseInfos) || pHouseInfos == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		auto agentInfo = pInterface->Agent_GetInfo();
+
+		HouseInfo house{};
+		for (int i{ 0 }; i < pHouseInfos->size(); ++i)
+		{
+			{
+				house = pHouseInfos->at(i);
+			}
+		}
+
+		Elite::Vector2 target = house.Center + Elite::Vector2{ house.Size.x, 0.f };
+
+		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+
+		
+
+		pSteering->AutoOrient = false;
+		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
+		pSteering->LinearVelocity.Normalize();
+		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = false;
+
+		pInterface->Draw_Circle(target, 7.f, Elite::Vector3{ 0,1,0 });
+
+		if (Elite::Distance(agentInfo.Position, target) > 1.5f)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		return Elite::BehaviorState::Success;
 	}
 
 }

@@ -219,8 +219,8 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnZombieOnRightClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	//params.Seed = 36;
-	params.Seed = 124;
+	params.Seed = 36;
+	//params.Seed = 124;
 }
 
 //Only Active in DEBUG Mode
