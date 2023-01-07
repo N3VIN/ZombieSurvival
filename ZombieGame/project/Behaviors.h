@@ -39,22 +39,22 @@ namespace BT_Conditions
 		return false;
 	}
 
-	/*bool IsEnemyNotInView(Elite::Blackboard* pBlackboard)
+	bool IsPurgeZoneInView(Elite::Blackboard* pBlackboard)
 	{
-		std::vector<EnemyInfo>* pEnemyInfos{ nullptr };
+		std::vector<PurgeZoneInfo>* pPurgeZoneInfos{ nullptr };
 
-		if (!pBlackboard->GetData("enemiesInFOV", pEnemyInfos) || pEnemyInfos == nullptr)
+		if (!pBlackboard->GetData("purgeZoneInFOV", pPurgeZoneInfos) || pPurgeZoneInfos == nullptr)
 		{
 			return false;
 		}
 
-		if (!pEnemyInfos->empty())
+		if (!pPurgeZoneInfos->empty())
 		{
-			return ;
+			return true;
 		}
 
 		return false;
-	}*/
+	}
 
 
 	bool IsHouseInView(Elite::Blackboard* pBlackboard)
@@ -108,9 +108,14 @@ namespace BT_Conditions
 
 		auto agentInfo = pInterface->Agent_GetInfo();
 
-		if (agentInfo.WasBitten)
+		/*if (agentInfo.Bitten)
 		{
 			return true;
+		}*/
+
+		if (agentInfo.Bitten)
+		{
+			pBittenTimer->Enable();
 		}
 
 		if (pBittenTimer->IsEnabled() && !pBittenTimer->IsDone())
@@ -192,7 +197,20 @@ namespace BT_Conditions
 
 	}
 
-	bool IsNeedMedKit(Elite::Blackboard* pBlackboard)
+	bool IsFoodAvailable(Elite::Blackboard* pBlackboard)
+	{
+		Inventory* pInventory{ nullptr };
+
+		if (!pBlackboard->GetData("inventory", pInventory) || pInventory == nullptr)
+		{
+			return false;
+		}
+
+		return pInventory->IsItemAvailable(eItemType::FOOD);
+
+	}
+
+	bool DoINeedMedKit(Elite::Blackboard* pBlackboard)
 	{
 		IExamInterface* pInterface{ nullptr };
 		Inventory* pInventory{ nullptr };
@@ -209,12 +227,69 @@ namespace BT_Conditions
 
 		auto currentHealth = pInterface->Agent_GetInfo().Health;
 
-		if (currentHealth <= 8)
+		float medKitMin{ 6.f };
+
+		if (currentHealth <= medKitMin)
 		{
 			if (IsMedKitAvailable(pBlackboard))
 			{
 				return true;
 			}
+		}
+
+		return false;
+	}
+
+	bool DoINeedFood(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		Inventory* pInventory{ nullptr };
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return false;
+		}
+
+		if (!pBlackboard->GetData("inventory", pInventory) || pInventory == nullptr)
+		{
+			return false;
+		}
+
+		auto currentEnergy = pInterface->Agent_GetInfo().Energy;
+
+		float foodMin{ 5.f };
+
+		if (currentEnergy <= foodMin)
+		{
+			if (IsFoodAvailable(pBlackboard))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	bool IsOutsideRange(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return false;
+		}
+
+		auto agentInfo = pInterface->Agent_GetInfo();
+		auto worldInfo = pInterface->World_GetInfo();
+
+		auto agentPos = agentInfo.Position;
+		auto worldPos = worldInfo.Center;
+
+		float boundRange{ 350.f };
+
+		if (Elite::DistanceSquared(agentPos, worldPos) > boundRange * boundRange)
+		{
+			return true;
 		}
 
 		return false;
@@ -234,6 +309,8 @@ namespace BT_Behaviors
 	{
 		IExamInterface* pInterface{ nullptr };
 		SteeringPlugin_Output* pSteering{};
+		Timer* pBittenTimer{ nullptr };
+
 
 		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
 		{
@@ -244,6 +321,14 @@ namespace BT_Behaviors
 		{
 			return Elite::BehaviorState::Failure;
 		}
+
+		if (!pBlackboard->GetData("bittenTimer", pBittenTimer) || pBittenTimer == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		pBittenTimer->ResetTimer();
+		pBittenTimer->Disable();
 
 		auto agentInfo = pInterface->Agent_GetInfo();
 
@@ -271,6 +356,7 @@ namespace BT_Behaviors
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();	  
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = false;
 
 		pInterface->Draw_Circle(circleCenter, 7.f, Elite::Vector3{ 0,1,0 });
 		pInterface->Draw_Direction(agentInfo.Position, targetVector, 10.f, Elite::Vector3{ 0,1,0 });
@@ -283,6 +369,8 @@ namespace BT_Behaviors
 		IExamInterface* pInterface{ nullptr };
 		SteeringPlugin_Output* pSteering{};
 		std::vector<EnemyInfo>* pEnemyInfos{ nullptr };
+		Timer* pBittenTimer{ nullptr };
+
 
 		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
 		{
@@ -299,6 +387,15 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
+
+		if (!pBlackboard->GetData("bittenTimer", pBittenTimer) || pBittenTimer == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		pBittenTimer->ResetTimer();
+		pBittenTimer->Disable();
+
 		auto agentInfo = pInterface->Agent_GetInfo();
 
 		EnemyInfo enemy{};
@@ -310,7 +407,9 @@ namespace BT_Behaviors
 
 		Elite::Vector2 desiredDirection = (enemy.Location - agentInfo.Position);
 
+		//auto target = enemy.Location - desiredDirection.GetNormalized();
 		auto target = enemy.Location - desiredDirection.GetNormalized() * 20.f;
+		//auto target = enemy.Location - agentInfo.Position;
 
 		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
@@ -318,6 +417,7 @@ namespace BT_Behaviors
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = false;
 
 		return Elite::BehaviorState::Success;
 
@@ -354,17 +454,14 @@ namespace BT_Behaviors
 			enemy = pEnemyInfos->at(i);
 		}
 
-		Elite::Vector2 desiredDirection = -(enemy.Location - agentInfo.Position);
+		auto target = agentInfo.LinearVelocity.GetNormalized();
 
-		auto target = enemy.Location - desiredDirection.GetNormalized();
-
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
-
-		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
+		pSteering->LinearVelocity = target + agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
 
-		pSteering->AutoOrient = false;
+		pSteering->AutoOrient = true;
+		//pSteering->RunMode = true;
 		pSteering->AngularVelocity = pInterface->Agent_GetInfo().MaxAngularSpeed;
 
 
@@ -436,6 +533,7 @@ namespace BT_Behaviors
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = false;
 
 		targetDirection.Normalize();
 		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
@@ -539,6 +637,7 @@ namespace BT_Behaviors
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = false;
 
 		if ((target - agentInfo.Position).Magnitude() < agentInfo.GrabRange)
 		{
@@ -602,6 +701,7 @@ namespace BT_Behaviors
 		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
 		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
 		pSteering->AngularVelocity = (enemyDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
+		pSteering->RunMode = false;
 
 		return Elite::BehaviorState::Success;
 
@@ -624,13 +724,104 @@ namespace BT_Behaviors
 		return Elite::BehaviorState::Failure;
 	}
 
+	Elite::BehaviorState UseFood(Elite::Blackboard* pBlackboard)
+	{
+		Inventory* pInventory{ nullptr };
+
+		if (!pBlackboard->GetData("inventory", pInventory) || pInventory == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (pInventory->UseFood())
+		{
+			return Elite::BehaviorState::Success;
+		}
+
+		return Elite::BehaviorState::Failure;
+	}
+
+	Elite::BehaviorState MoveToCenter(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		SteeringPlugin_Output* pSteering{};
+
+		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		auto agentInfo = pInterface->Agent_GetInfo();
+		auto worldInfo = pInterface->World_GetInfo();
+
+		auto target = worldInfo.Center;
+
+		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+
+		pSteering->AutoOrient = false;
+		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
+		pSteering->LinearVelocity.Normalize();
+		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = false;
+
+		return Elite::BehaviorState::Success;
+
+	}
+
+	Elite::BehaviorState FleeFromPurgeZone(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		SteeringPlugin_Output* pSteering{};
+		std::vector<PurgeZoneInfo>* pPurgeZoneInfos{ nullptr };
+
+		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("purgeZoneInFOV", pPurgeZoneInfos) || pPurgeZoneInfos == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+
+		auto agentInfo = pInterface->Agent_GetInfo();
+
+		PurgeZoneInfo purgeZone{};
+
+		for (int i{ 0 }; i < pPurgeZoneInfos->size(); ++i)
+		{
+			purgeZone = pPurgeZoneInfos->at(i);
+		}
+
+		//Elite::Vector2 desiredDirection = (purgeZone.Center - agentInfo.Position);
+
+		//auto target = purgeZone.Center - desiredDirection.GetNormalized() * 20.f;
+		auto target = Elite::Vector2 { purgeZone.Center.x + purgeZone.Radius, purgeZone.Center.y + purgeZone.Radius };
+
+		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+
+		pSteering->AutoOrient = false;
+		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
+		pSteering->LinearVelocity.Normalize();
+		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = true;
+
+		return Elite::BehaviorState::Success;
+
+	}
+
 }
-
-
-
-
-
-
 
 
 #endif

@@ -17,13 +17,13 @@ Inventory::Inventory(IExamInterface* pInterface)
 
 bool Inventory::PickupItem(EntityInfo entityInfo) 
 {
-	ItemInfo itemInfo{};
-	m_pInterface->Item_GetInfo(entityInfo, itemInfo);
-
 	if (IsInventoryFull())
 	{
 		return false;
 	}
+
+	ItemInfo itemInfo{};
+	m_pInterface->Item_GetInfo(entityInfo, itemInfo);
 
 	if (itemInfo.Type == eItemType::GARBAGE)
 	{
@@ -118,13 +118,48 @@ bool Inventory::UseMedKit()
 	return true;
 }
 
+bool Inventory::UseFood()
+{
+	if (!IsItemAvailable(eItemType::FOOD))
+	{
+		return false;
+	}
+
+	UINT slotID{};
+	for (int i{}; i < m_Inventory.size(); ++i)
+	{
+		if (m_Inventory.at(i) == eItemType::FOOD)
+		{
+			slotID = i;
+		}
+	}
+
+	m_pInterface->Inventory_UseItem(slotID);
+
+	ItemInfo itemInfo{};
+	if (m_pInterface->Inventory_GetItem(slotID, itemInfo))
+	{
+		if (m_pInterface->Medkit_GetHealth(itemInfo) <= 0)
+		{
+			m_pInterface->Inventory_RemoveItem(slotID);
+			m_Inventory.at(slotID) = eItemType::RANDOM_DROP;
+		}
+	}
+
+	return true;
+}
+
 bool Inventory::IsInventoryFull() const
 {
-	return std::all_of(m_Inventory.begin(), m_Inventory.end(), [](eItemType itemType)
+	for (int i{}; i < m_Inventory.size(); ++i)
+	{
+		if (m_Inventory.at(i) == eItemType::RANDOM_DROP)
 		{
-			return itemType != eItemType::RANDOM_DROP;
+			return false;
 		}
-	);
+	}
+
+	return true;
 }
 
 bool Inventory::IsGunAvailable() const

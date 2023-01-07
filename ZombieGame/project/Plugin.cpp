@@ -58,6 +58,16 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 			new BehaviorSelector
 			(
 				{
+
+					new BehaviorSequence
+					(
+					{
+						// if purgeZone in view.
+						new BehaviorConditional(&BT_Conditions::IsPurgeZoneInView),
+						// Flee from purgeZone.
+						new BehaviorAction(&BT_Behaviors::FleeFromPurgeZone)
+						}
+					),
 					new BehaviorSequence
 					(
 						{
@@ -123,10 +133,21 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						// checks if house is in FOV.
 					new BehaviorConditional(&BT_Conditions::IsHouseInView),
 					// seek house.
-				new BehaviorAction(&BT_Behaviors::SeekHouse)
-				}
-			),
+					new BehaviorAction(&BT_Behaviors::SeekHouse)
+					}
+				),
 
+					new BehaviorSequence
+				(
+					{
+						// if out of range.
+					new BehaviorConditional(&BT_Conditions::IsOutsideRange),
+					// turn to center.
+					new BehaviorAction(&BT_Behaviors::MoveToCenter)
+					}
+				),
+
+					
 
 
 				// Action node to wander.
@@ -139,7 +160,19 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					new BehaviorSequence
 					(
 						{
-							new BehaviorConditional(&BT_Conditions::IsNeedMedKit),
+							// check if you need and have Food if available.
+							new BehaviorConditional(&BT_Conditions::DoINeedFood),
+							// if yes use food.
+							new BehaviorAction(&BT_Behaviors::UseFood)
+						}
+					),
+
+					new BehaviorSequence
+					(
+						{
+							// check if you need and have medkit if available.
+							new BehaviorConditional(&BT_Conditions::DoINeedMedKit),
+							// if yes use medKit.
 							new BehaviorAction(&BT_Behaviors::UseMedKit)
 						}
 					)
@@ -179,14 +212,15 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.LevelFile = "GameLevel.gppl";
 	params.AutoGrabClosestItem = true; //A call to Item_Grab(...) returns the closest item that can be grabbed. (EntityInfo argument is ignored)
 	params.StartingDifficultyStage = 1;
-	params.InfiniteStamina = false;
+	params.InfiniteStamina = true;
 	params.SpawnDebugPistol = true;
 	params.SpawnDebugShotgun = true;
 	params.SpawnPurgeZonesOnMiddleClick = true;
+	params.SpawnZombieOnRightClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 3;
-	//params.Seed = 124;
+	//params.Seed = 36;
+	params.Seed = 124;
 }
 
 //Only Active in DEBUG Mode
@@ -264,9 +298,12 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 	m_pBehaviorTree->Update(dt);
 	m_pBittenTimer->Update(dt);
 
+	
+	
+
 	m_pBehaviorTree->GetBlackboard()->GetData("steering", pSteering);
 
-	float oldHealth{};
+	/*float oldHealth{};
 	if (m_pBehaviorTree->GetBlackboard()->GetData("health", oldHealth))
 	{
 		float currentHealth{ m_pInterface->Agent_GetInfo().Health };
@@ -276,8 +313,11 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 			m_pBittenTimer->ResetTimer();
 			m_pBehaviorTree->GetBlackboard()->ChangeData("health", currentHealth);
 		}
-	}
+	}*/
 
+
+
+	//pSteering->RunMode = false;
 
 
 
@@ -367,6 +407,8 @@ void Plugin::Render(float dt) const
 {
 	//This Render function should only contain calls to Interface->Draw_... functions
 	m_pInterface->Draw_SolidCircle(m_Target, .7f, { 0,0 }, { 1, 0, 0 });
+
+	//m_pInterface->Draw_SolidCircle(m_pInterface->World_GetInfo().Center, 325, { 0,0 }, { 0, 0, 1 });
 }
 
 vector<HouseInfo> Plugin::GetHousesInFOV() const

@@ -20,6 +20,7 @@ public:
 	bool PickupItem(EntityInfo entityInfo);
 	bool UseGun();
 	bool UseMedKit();
+	bool UseFood();
 
 	bool IsInventoryFull() const;
 	bool IsGunAvailable() const;
