@@ -76,7 +76,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 												new BehaviorAction(&BT_Behaviors::Shoot)
 											}
 										),
-									// flee fom enemy.
+									// turn around and flee.
 									new BehaviorAction(&BT_Behaviors::TurnAround)
 								}
 							)
@@ -88,7 +88,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						{
 								// was bitten.
 								new BehaviorConditional(&BT_Conditions::IsBitten),
-								// turn around.
+								// turn around and flee.
 								new BehaviorAction(&BT_Behaviors::TurnAround)
 
 								}
@@ -323,6 +323,8 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 	}
 
 	m_pBehaviorTree->GetBlackboard()->GetData("steering", pSteering);
+
+	return *pSteering;
 }
 
 //This function should only be used for rendering debug elements

@@ -106,7 +106,7 @@ namespace BT_Conditions
 			return false;
 		}
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		if (agentInfo.Bitten)
 		{
@@ -143,7 +143,7 @@ namespace BT_Conditions
 			return false;
 		}
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		HouseInfo house{};
 		for (int i{ 0 }; i < pHouseInfos->size(); ++i)
@@ -277,7 +277,6 @@ namespace BT_Conditions
 		IExamInterface* pInterface{ nullptr };
 		SteeringPlugin_Output* pSteering{};
 		CellSpace* pCellSpace{ nullptr };
-		Cell* pCell{ nullptr };
 
 		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
 		{
@@ -290,11 +289,6 @@ namespace BT_Conditions
 		}
 
 		if (!pBlackboard->GetData("gridCells", pCellSpace) || pCellSpace == nullptr)
-		{
-			return false;
-		}
-
-		if (!pBlackboard->GetData("cells", pCell) || pCell == nullptr)
 		{
 			return false;
 		}
@@ -319,7 +313,6 @@ namespace BT_Conditions
 
 	}
 
-	
 }
 
 
@@ -438,10 +431,20 @@ namespace BT_Behaviors
 		backDirection.Normalize();
 
 		pSteering->AutoOrient = false;
-		const float agentRotation{ agentInfo.Orientation + 0.5f * M_PI };
+		const float agentRotation{ agentInfo.Orientation + 0.5f * float(M_PI) };
 
 		const Elite::Vector2 agentDirection{ std::cosf(agentRotation),std::sinf(agentRotation) };
 		pSteering->AngularVelocity = (backDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
+
+		if (agentInfo.Stamina <= 3.f)
+		{
+			pSteering->RunMode = false;
+
+		}
+		else
+		{
+			pSteering->RunMode = true;
+		}
 
 		return Elite::BehaviorState::Success;
 	}
@@ -503,7 +506,7 @@ namespace BT_Behaviors
 		pSteering->RunMode = false;
 
 		targetDirection.Normalize();
-		const float agentRotation{ agentInfo.Orientation + 0.5f * M_PI };
+		const float agentRotation{ agentInfo.Orientation + 0.5f * float(M_PI) };
 
 		const Elite::Vector2 agentDirection{ std::cosf(agentRotation),std::sinf(agentRotation) };
 		pSteering->AngularVelocity = (targetDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
@@ -708,7 +711,7 @@ namespace BT_Behaviors
 
 		Elite::Vector2 enemyDirection = (enemy.Location - agentInfo.Position);
 		enemyDirection.Normalize();
-		const float agentRotation{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
+		const float agentRotation{ agentInfo.Orientation + 0.5f * float(M_PI) };
 
 		const auto orientation = std::abs(agentInfo.Orientation - std::atan2(enemyDirection.y, enemyDirection.x));
 		const Elite::Vector2 agentDirection{ std::cosf(agentRotation),std::sinf(agentRotation) };
@@ -813,7 +816,6 @@ namespace BT_Behaviors
 		IExamInterface* pInterface{ nullptr };
 		SteeringPlugin_Output* pSteering{};
 		CellSpace* pCellSpace{ nullptr };
-		Cell* pCell{ nullptr };
 		Timer* pBittenTimer{ nullptr };
 
 
@@ -832,20 +834,21 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
-		if (!pBlackboard->GetData("cells", pCell) || pCell == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
 		if (!pBlackboard->GetData("bittenTimer", pBittenTimer) || pBittenTimer == nullptr)
 		{
 			return Elite::BehaviorState::Failure;
 		}
 
+
 		pBittenTimer->ResetTimer();
 		pBittenTimer->Disable();
 
 		const auto agentInfo = pInterface->Agent_GetInfo();
+
+		if (agentInfo.IsInHouse)
+		{
+			return Elite::BehaviorState::Failure;
+		}
 
 		const auto cell = pCellSpace->GetNearestCellInPath(agentInfo.Position);
 
