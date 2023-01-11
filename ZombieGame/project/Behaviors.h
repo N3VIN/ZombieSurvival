@@ -164,29 +164,23 @@ namespace BT_Conditions
 		
 		if (Elite::Distance(agentInfo.Position, house.Center) < 1.5f)
 		{
-			for (int i{ 0 }; i < pHouseInfos->size(); ++i)
+			if (pHousesChecked->empty())
 			{
-				if (pHousesChecked->empty())
+				pHousesChecked->push_back(house);
+			}
+
+			for (int i{ 0 }; i < pHousesChecked->size(); ++i)
+			{
+				if (house.Center != pHousesChecked->at(i).Center)
 				{
-					pHousesChecked->push_back(pHouseInfos->at(i));
-
+					pHousesChecked->push_back(house);
 				}
-
-				for (int j{ 0 }; j < pHousesChecked->size(); ++j)
-				{
-					if (pHouseInfos->at(i).Center != pHousesChecked->at(j).Center)
-					{
-						pHousesChecked->push_back(pHouseInfos->at(i));
-					}
-				}
-
 			}
 
 			return true;
 		}
 
 		return false;
-		//return pInterface->Agent_GetInfo().IsInHouse;
 	}
 
 	bool IsGunAvailable(Elite::Blackboard* pBlackboard)
@@ -288,31 +282,6 @@ namespace BT_Conditions
 		return false;
 	}
 
-	bool IsOutsideRange(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-
-		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-		{
-			return false;
-		}
-
-		auto agentInfo = pInterface->Agent_GetInfo();
-		auto worldInfo = pInterface->World_GetInfo();
-
-		auto agentPos = agentInfo.Position;
-		auto worldPos = worldInfo.Center;
-
-		float boundRange{ 350.f };
-
-		if (Elite::DistanceSquared(agentPos, worldPos) > boundRange * boundRange)
-		{
-			return true;
-		}
-
-		return false;
-	}
-
 	bool IsInCell(Elite::Blackboard* pBlackboard)
 	{
 		IExamInterface* pInterface{ nullptr };
@@ -347,25 +316,20 @@ namespace BT_Conditions
 
 		for (int i = 0; i < pathCells.size(); ++i)
 		{
-			if (Elite::Distance(agentInfo.Position, pathCells.at(i).center) < 1.5f)
+			if (Elite::Distance(agentInfo.Position, pathCells.at(i).center) <= 20.f)
 			{
 				pCellSpace->CheckedCellInPath(i);
 				return true;
 			}
-		}
+			pInterface->Draw_Circle(pathCells.at(i).center, 20.f, Elite::Vector3{ 0,1,1 });
 
-		for (int i = 0; i < otherCells.size(); ++i)
-		{
-			if (Elite::Distance(agentInfo.Position, otherCells.at(i).center) < 1.5f)
-			{
-				pCellSpace->CheckedCellInCells(i);
-				return true;
-			}
 		}
 
 		return false;
 
 	}
+
+	
 }
 
 
@@ -498,6 +462,7 @@ namespace BT_Behaviors
 	{
 		IExamInterface* pInterface{ nullptr };
 		SteeringPlugin_Output* pSteering{};
+		CellSpace* pCellSpace{ nullptr };
 		std::vector<EnemyInfo>* pEnemyInfos{ nullptr };
 
 
@@ -516,6 +481,11 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
+		if (!pBlackboard->GetData("gridCells", pCellSpace) || pCellSpace == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
 		auto agentInfo = pInterface->Agent_GetInfo();
 
 		EnemyInfo enemy{};
@@ -525,17 +495,23 @@ namespace BT_Behaviors
 			enemy = pEnemyInfos->at(i);
 		}
 
-		auto target = agentInfo.LinearVelocity.GetNormalized();
+		auto cell = pCellSpace->GetNearestCellInPath(agentInfo.Position);
 
-		pSteering->LinearVelocity = target + agentInfo.Position;
+		auto target = cell.center;
+
+		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+
+		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
 
+		auto backDirection = -agentInfo.LinearVelocity;
+
 		pSteering->AutoOrient = false;
-		//pSteering->RunMode = true;
-		pSteering->AngularVelocity = pInterface->Agent_GetInfo().MaxAngularSpeed;
-
-
+		backDirection.Normalize();
+		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
+		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
+		pSteering->AngularVelocity = (backDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
 
 		return Elite::BehaviorState::Success;
 	}
@@ -588,11 +564,7 @@ namespace BT_Behaviors
 
 			}
 		}
-		
 
-		//auto target = pHouseInfos->at(0).Center;
-
-		//auto target = pHouseInfos->begin()->Center;
 
 		auto target = house.Center;
 
@@ -611,15 +583,8 @@ namespace BT_Behaviors
 		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
 		pSteering->AngularVelocity = (targetDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
 
-		return Elite::BehaviorState::Success;
+		return Elite::BehaviorState::Running;
 
-	}
-
-	Elite::BehaviorState ExitHouse(Elite::Blackboard* pBlackboard)
-	{
-		std::cout << "Exit house rn \n";
-
-		return Elite::BehaviorState::Success;
 	}
 
 	Elite::BehaviorState AddToHousesChecked(Elite::Blackboard* pBlackboard)
@@ -757,24 +722,21 @@ namespace BT_Behaviors
 		}
 
 		Elite::Vector2 enemyDirection = (enemy.Location - agentInfo.Position);
-
-		if (std::abs(agentInfo.Orientation - std::atan2(enemyDirection.y, enemyDirection.x)) < 0.05f)
-		{
-			// If we're oriented to the closest enemy, shoot it
-			if (pInventory->UseGun())
-			{
-				return Elite::BehaviorState::Success;
-			}
-			return Elite::BehaviorState::Failure;
-		}
-
 		enemyDirection.Normalize();
 		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
 		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
 		pSteering->AngularVelocity = (enemyDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
 		pSteering->RunMode = false;
 
-		return Elite::BehaviorState::Success;
+		if (std::abs(agentInfo.Orientation - std::atan2(enemyDirection.y, enemyDirection.x)) < 0.05f)
+		{
+			if (pInventory->UseGun())
+			{
+				return Elite::BehaviorState::Success;
+			}
+		}
+
+		return Elite::BehaviorState::Running;
 
 	}
 
@@ -875,10 +837,11 @@ namespace BT_Behaviors
 			purgeZone = pPurgeZoneInfos->at(i);
 		}
 
-		//Elite::Vector2 desiredDirection = (purgeZone.Center - agentInfo.Position);
+		Elite::Vector2 desiredDirection = (purgeZone.Center + agentInfo.Position);
 
-		//auto target = purgeZone.Center - desiredDirection.GetNormalized() * 20.f;
-		auto target = Elite::Vector2 { purgeZone.Center.x + purgeZone.Radius, purgeZone.Center.y + purgeZone.Radius };
+		auto target = -desiredDirection.GetNormalized() * 20.f;
+
+		//auto target = Elite::Vector2 { purgeZone.Center.x + purgeZone.Radius, purgeZone.Center.y + purgeZone.Radius };
 
 		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
@@ -898,6 +861,8 @@ namespace BT_Behaviors
 		SteeringPlugin_Output* pSteering{};
 		CellSpace* pCellSpace{ nullptr };
 		Cell* pCell{ nullptr };
+		Timer* pBittenTimer{ nullptr };
+
 
 		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
 		{
@@ -919,80 +884,41 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
+		if (!pBlackboard->GetData("bittenTimer", pBittenTimer) || pBittenTimer == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		pBittenTimer->ResetTimer();
+		pBittenTimer->Disable();
+
 		auto agentInfo = pInterface->Agent_GetInfo();
 
 		auto cell = pCellSpace->GetNearestCellInPath(agentInfo.Position);
+		
 
 		auto target = cell.center;
 
 		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
+		if (agentInfo.Stamina <= 3.f)
+		{
+			pSteering->RunMode = false;
+
+		}
+		else
+		{
+			pSteering->RunMode = true;
+		}
+
 		pSteering->AutoOrient = true;
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-		pSteering->RunMode = false;
-
-		/*targetDirection.Normalize();
-		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
-		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
-		pSteering->AngularVelocity = (targetDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;*/
 
 		return Elite::BehaviorState::Success;
 	}
 
-	Elite::BehaviorState CheckRightSideHouse(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-		SteeringPlugin_Output* pSteering{};
-		std::vector<HouseInfo>* pHouseInfos{ nullptr };
-
-		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("housesInFOV", pHouseInfos) || pHouseInfos == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		auto agentInfo = pInterface->Agent_GetInfo();
-
-		HouseInfo house{};
-		for (int i{ 0 }; i < pHouseInfos->size(); ++i)
-		{
-			{
-				house = pHouseInfos->at(i);
-			}
-		}
-
-		Elite::Vector2 target = house.Center + Elite::Vector2{ house.Size.x, 0.f };
-
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
-
-		
-
-		pSteering->AutoOrient = false;
-		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
-		pSteering->LinearVelocity.Normalize();
-		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-		pSteering->RunMode = false;
-
-		pInterface->Draw_Circle(target, 7.f, Elite::Vector3{ 0,1,0 });
-
-		if (Elite::Distance(agentInfo.Position, target) > 1.5f)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		return Elite::BehaviorState::Success;
-	}
 
 }
 

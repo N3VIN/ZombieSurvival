@@ -76,7 +76,7 @@ std::vector<Cell> CellSpace::GetPath() const
 Cell CellSpace::GetNearestCellInPath(const Elite::Vector2& position) const
 {
 	float smallestDistance{ FLT_MAX };
-	Cell nearestCell{};
+	Cell nearestCell{m_Path.at(0)};
 
 	for (auto cell : m_Path)
 	{
@@ -94,11 +94,6 @@ Cell CellSpace::GetNearestCellInPath(const Elite::Vector2& position) const
 	return nearestCell;
 }
 
-void CellSpace::CheckedCellInCells(int index)
-{
-	m_Cells.at(index).isCellChecked = true;
-}
-
 void CellSpace::CheckedCellInPath(int index)
 {
 	m_Path.at(index).isCellChecked = true;
@@ -110,4 +105,13 @@ void CellSpace::ResetPath()
 	{
 		cell.isCellChecked = false;
 	}
+}
+
+bool CellSpace::IsAllCellInPathChecked()
+{
+	return std::all_of(m_Path.begin(), m_Path.end(), [](Cell i)
+	{
+		return i.isCellChecked == true;
+	});
+	
 }

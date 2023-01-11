@@ -31,6 +31,7 @@ struct Cell
 {
 	Cell(float left, float bottom, float width, float height);
 	Cell() = default;
+
 	std::vector<Elite::Vector2> GetRectPoints() const;
 
 	Rect boundingBox;
@@ -49,9 +50,9 @@ public:
 	std::vector<Cell> GetCells() const;
 	std::vector<Cell> GetPath() const;
 	Cell GetNearestCellInPath(const Elite::Vector2& position) const;
-	void CheckedCellInCells(int index);
 	void CheckedCellInPath(int index);
 	void ResetPath();
+	bool IsAllCellInPathChecked();
 
 private:
 	// Cells and properties

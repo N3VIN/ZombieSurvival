@@ -35,7 +35,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pHousesInFov = new std::vector<HouseInfo>();
 	m_pHousesChecked = new std::vector<HouseInfo>();
 	m_pInventory = new Inventory(m_pInterface);
-	m_pBittenTimer = new Timer(1.25f, false);
+	m_pBittenTimer = new Timer(2.5f, false);
 	m_pGridCells = new CellSpace(m_pInterface->World_GetInfo().Dimensions.x, m_pInterface->World_GetInfo().Dimensions.y, 14, 14);
 	m_pCell = new Cell();
 
@@ -61,23 +61,53 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 			(
 				{
 
-					new BehaviorSequence
-					(
-					{
-						// if purgeZone in view.
-						new BehaviorConditional(&BT_Conditions::IsPurgeZoneInView),
-						// Flee from purgeZone.
-						new BehaviorAction(&BT_Behaviors::FleeFromPurgeZone)
-						}
+					
+
+							new BehaviorSequence
+						(
+							{
+								// checks if enemy is in FOV.
+							new BehaviorConditional(&BT_Conditions::IsEnemyInView),
+
+								new BehaviorSelector
+								(
+									{
+										new BehaviorSequence
+										(
+											{
+												// If gun is available.
+												new BehaviorConditional(&BT_Conditions::IsGunAvailable),
+												// Shoot.
+												new BehaviorAction(&BT_Behaviors::Shoot)
+											}
+											// else
+										),
+									// flee fom enemy.
+									//new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
+									new BehaviorAction(&BT_Behaviors::TurnAround)
+								}
+							)
+							}
 					),
 
-					new BehaviorSequence
-					(
+						new BehaviorSequence
+						(
 						{
-							// checks if item is in FOV.
-						new BehaviorConditional(&BT_Conditions::IsItemInView),
-						// Pickup items in FOV.
-						new BehaviorAction(&BT_Behaviors::PickupItemsFOV)
+								// was bitten.
+								new BehaviorConditional(&BT_Conditions::IsBitten),
+								// turn around.
+								new BehaviorAction(&BT_Behaviors::TurnAround)
+
+								}
+						),
+
+						new BehaviorSequence
+						(
+							{
+								// checks if item is in FOV.
+							new BehaviorConditional(&BT_Conditions::IsItemInView),
+								// Pickup items in FOV.
+								new BehaviorAction(&BT_Behaviors::PickupItemsFOV)
 						}
 					),
 
@@ -104,49 +134,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					),
 
 					new BehaviorSequence
-					(
-					{
-						// was bitten.
-						new BehaviorConditional(&BT_Conditions::IsBitten),
-						// turn around.
-						new BehaviorAction(&BT_Behaviors::TurnAround)
-
-						}
-					),
-
-					
-
-					new BehaviorSequence
-					(
-						{
-							// checks if enemy is in FOV.
-						new BehaviorConditional(&BT_Conditions::IsEnemyInView),
-
-							new BehaviorSelector
-							(
-								{
-									new BehaviorSequence
-									(
-										{
-											// If gun is available.
-											new BehaviorConditional(&BT_Conditions::IsGunAvailable),
-											// Shoot.
-											new BehaviorAction(&BT_Behaviors::Shoot)
-										}
-										// else
-									),
-								// flee fom enemy.
-								new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
-							}
-						)
-						}
-				),
-
-				
-
-				
-
-					new BehaviorSequence
 				(
 					{
 						// checks if its not in cell.
@@ -162,20 +149,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						)
 					}
 				),
-
-				
-
-					new BehaviorSequence
-				(
-					{
-						// if out of range.
-					new BehaviorConditional(&BT_Conditions::IsOutsideRange),
-					// turn to center.
-					new BehaviorAction(&BT_Behaviors::MoveToCenter)
-					}
-				),
-
-					
 
 
 				// Action node to wander.
@@ -204,6 +177,21 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 							new BehaviorAction(&BT_Behaviors::UseMedKit)
 						}
 					)
+				}
+			),
+
+			new BehaviorSelector
+			(
+				{
+					new BehaviorSequence
+					(
+					{
+							// if purgeZone in view.
+							new BehaviorConditional(&BT_Conditions::IsPurgeZoneInView),
+							// Flee from purgeZone.
+							new BehaviorAction(&BT_Behaviors::FleeFromPurgeZone)
+							}
+						),
 				}
 			)
 
@@ -240,15 +228,15 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.LevelFile = "GameLevel.gppl";
 	params.AutoGrabClosestItem = true; //A call to Item_Grab(...) returns the closest item that can be grabbed. (EntityInfo argument is ignored)
 	params.StartingDifficultyStage = 1;
-	params.InfiniteStamina = true;
+	params.InfiniteStamina = false;
 	params.SpawnDebugPistol = true;
 	params.SpawnDebugShotgun = true;
 	params.SpawnPurgeZonesOnMiddleClick = true;
 	params.SpawnZombieOnRightClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 36;
-	//params.Seed = 124;
+	//params.Seed = 36;
+	params.Seed = 1234;
 }
 
 //Only Active in DEBUG Mode
@@ -327,6 +315,16 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 	m_pBehaviorTree->Update(dt);
 	m_pBittenTimer->Update(dt);
 
+	if (m_pGridCells->IsAllCellInPathChecked())
+	{
+		m_pGridCells->ResetPath();
+		m_pHousesChecked->clear();
+	}
+
+	if (m_pHousesChecked->size() >= 6000)
+	{
+		m_pHousesChecked->clear();
+	}
 	
 	
 
@@ -440,14 +438,11 @@ void Plugin::Render(float dt) const
 	// World grid
 	for (const auto& cell : m_pGridCells->GetCells())
 	{
-		if (cell.isCellChecked)
+		if (!cell.isCellChecked)
 		{
-			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.0f, 0.5f, 0.2f });
+			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.0f, 0.0f, 1.0f });
 		}
-		else
-		{
-			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 1.f, 0.f, 0.f });
-		}
+		
 	}
 
 	for (const auto& cell : m_pGridCells->GetPath())
@@ -458,7 +453,7 @@ void Plugin::Render(float dt) const
 		}
 		else
 		{
-			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.f, 0.f, 1.f });
+			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 1.f, 0.f, 0.f });
 		}
 	}
 

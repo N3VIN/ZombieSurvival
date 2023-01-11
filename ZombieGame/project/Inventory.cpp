@@ -22,8 +22,35 @@ bool Inventory::PickupItem(EntityInfo entityInfo)
 		return false;
 	}
 
+	/*if(IsItemAvailable(eItemType::SHOTGUN))
+	{
+		return false;
+	}
+
+	if (IsItemAvailable(eItemType::PISTOL))
+	{
+		return false;
+	}*/
+
 	ItemInfo itemInfo{};
 	m_pInterface->Item_GetInfo(entityInfo, itemInfo);
+
+	UINT emptySlotId{};
+
+	switch (itemInfo.Type)
+	{
+	case 0 :
+		emptySlotId = 0U;
+		break;
+	case 1:
+		emptySlotId = 1U;
+		break;
+	case 2:
+		emptySlotId = 2U;
+		break;
+	case 3:
+		return PickupMedkit(entityInfo);
+	}
 
 	if (itemInfo.Type == eItemType::GARBAGE)
 	{
@@ -31,25 +58,52 @@ bool Inventory::PickupItem(EntityInfo entityInfo)
 		return true;
 	}
 
-	if (!m_pInterface->Item_Grab(entityInfo, itemInfo))
+	if (m_pInterface->Item_Grab(entityInfo, itemInfo))
 	{
-		return false;
+		
+
+		//emptySlotId = GetFreeItemSlot();
+
+		m_pInterface->Inventory_AddItem(emptySlotId, itemInfo);
+
+		m_Inventory.at(emptySlotId) = itemInfo.Type;
+		return true;
 	}
 
-	UINT emptySlotId{};
-	/*for (UINT i{ 0 }; i < m_pInterface->Inventory_GetCapacity(); ++i)
+	return false;
+	
+}
+
+bool Inventory::PickupMedkit(EntityInfo entityInfo)
+{
+	ItemInfo itemInfo{};
+	m_pInterface->Item_GetInfo(entityInfo, itemInfo);
+
+	UINT slot3 = 3U;
+	UINT slot4 = 4U;
+	if (m_Inventory.at(slot3) != eItemType::FOOD)
 	{
-		if (!m_pInterface->Inventory_GetItem(i, itemInfo))
+		if (m_pInterface->Item_Grab(entityInfo, itemInfo))
 		{
-			emptySlotId = i;
+			m_pInterface->Inventory_AddItem(slot3, itemInfo);
+
+			m_Inventory.at(slot3) = itemInfo.Type;
+			return true;
 		}
-	}*/
+	}
+	else
+	{
+		if (m_pInterface->Item_Grab(entityInfo, itemInfo))
+		{
+			m_pInterface->Inventory_AddItem(slot4, itemInfo);
 
-	emptySlotId = GetFreeItemSlot();
+			m_Inventory.at(slot4) = itemInfo.Type;
+			return true;
+		}
+	}
+	
 
-	m_pInterface->Inventory_AddItem(emptySlotId, itemInfo);
-	m_Inventory.at(emptySlotId) = itemInfo.Type;
-	return true;
+	return false;
 }
 
 bool Inventory::UseGun()
@@ -186,18 +240,4 @@ bool Inventory::IsItemAvailable(eItemType itemType) const
 	}
 
 	return false;
-}
-
-UINT Inventory::GetFreeItemSlot() const
-{
-	ItemInfo itemInfo;
-	for (UINT i{ 0 }; i < m_pInterface->Inventory_GetCapacity(); ++i)
-	{
-		if (!m_pInterface->Inventory_GetItem(i, itemInfo))
-		{
-			return i;
-		}
-	}
-
-	return invalid_inventory_slot;
 }
