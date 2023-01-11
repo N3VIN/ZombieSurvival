@@ -30,6 +30,7 @@ struct Rect final
 struct Cell
 {
 	Cell(float left, float bottom, float width, float height);
+	Cell() = default;
 	std::vector<Elite::Vector2> GetRectPoints() const;
 
 	Rect boundingBox;
@@ -44,12 +45,13 @@ class CellSpace
 public:
 	CellSpace(float width, float height, int rows, int cols);
 	CellSpace() = default;
-	CellSpace& operator=(const CellSpace& other) = default;
 
 	std::vector<Cell> GetCells() const;
 	std::vector<Cell> GetPath() const;
 	Cell GetNearestCellInPath(const Elite::Vector2& position) const;
-	void CheckedCell(const Elite::Vector2& position) const;
+	void CheckedCellInCells(int index);
+	void CheckedCellInPath(int index);
+	void ResetPath();
 
 private:
 	// Cells and properties

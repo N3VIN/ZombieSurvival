@@ -57,8 +57,8 @@ private:
 	std::vector<HouseInfo>* m_pHousesChecked;
 	Inventory* m_pInventory;
 	Timer* m_pBittenTimer;
-	CellSpace m_WorldGrid;
-
+	CellSpace* m_pGridCells;
+	Cell* m_pCell;
 
 
 

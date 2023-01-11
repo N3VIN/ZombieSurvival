@@ -36,7 +36,9 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pHousesChecked = new std::vector<HouseInfo>();
 	m_pInventory = new Inventory(m_pInterface);
 	m_pBittenTimer = new Timer(1.25f, false);
-	m_WorldGrid = CellSpace(m_pInterface->World_GetInfo().Dimensions.x, m_pInterface->World_GetInfo().Dimensions.y, 14, 14);
+	m_pGridCells = new CellSpace(m_pInterface->World_GetInfo().Dimensions.x, m_pInterface->World_GetInfo().Dimensions.y, 14, 14);
+	m_pCell = new Cell();
+
 
 	Blackboard* pBlackboard = new Blackboard();
 	pBlackboard->AddData("steering", m_pSteeringOutputData);
@@ -48,6 +50,8 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	pBlackboard->AddData("housesChecked", m_pHousesChecked);
 	pBlackboard->AddData("inventory", m_pInventory);
 	pBlackboard->AddData("bittenTimer", m_pBittenTimer);
+	pBlackboard->AddData("gridCells", m_pGridCells);
+	pBlackboard->AddData("cells", m_pCell);
 
 	m_pBehaviorTree = new BehaviorTree(pBlackboard, new BehaviorGroup
 	(
@@ -66,6 +70,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						new BehaviorAction(&BT_Behaviors::FleeFromPurgeZone)
 						}
 					),
+
 					new BehaviorSequence
 					(
 						{
@@ -75,6 +80,41 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						new BehaviorAction(&BT_Behaviors::PickupItemsFOV)
 						}
 					),
+
+					new BehaviorSequence
+					(
+					{
+							// checks if inside house.
+							new BehaviorConditional(&BT_Conditions::IsInsideHouse),
+							// Add to houses checked.
+							//new BehaviorAction(&BT_Behaviors::AddToHousesChecked),
+							// Wander inside house.
+							new BehaviorAction(&BT_Behaviors::Wander)
+							}
+						),
+
+					new BehaviorSequence
+					(
+					{
+							// checks if house is in FOV.
+						new BehaviorConditional(&BT_Conditions::IsHouseInView),
+							// seek house.
+						new BehaviorAction(&BT_Behaviors::SeekHouse)
+						}
+					),
+
+					new BehaviorSequence
+					(
+					{
+						// was bitten.
+						new BehaviorConditional(&BT_Conditions::IsBitten),
+						// turn around.
+						new BehaviorAction(&BT_Behaviors::TurnAround)
+
+						}
+					),
+
+					
 
 					new BehaviorSequence
 					(
@@ -102,38 +142,28 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						}
 				),
 
-				new BehaviorSequence
+				
+
+				
+
+					new BehaviorSequence
 				(
 					{
-						// was bitten.
-						new BehaviorConditional(&BT_Conditions::IsBitten),
-						// turn around.
-						new BehaviorAction(&BT_Behaviors::TurnAround)
-
+						// checks if its not in cell.
+					new BehaviorInvertConditional(&BT_Conditions::IsInCell),
+						new BehaviorSelector
+						(
+							{
+								// Seek to nearest cell.
+							new BehaviorAction(&BT_Behaviors::SeekToNearestCell),
+								// Wander.
+							new BehaviorAction(&BT_Behaviors::Wander)
+							}
+						)
 					}
 				),
 
-				new BehaviorSequence
-				(
-					{
-						// checks if inside house.
-					new BehaviorConditional(&BT_Conditions::IsInsideHouse),
-					// Add to houses checked.
-					//new BehaviorAction(&BT_Behaviors::AddToHousesChecked),
-					// Wander inside house.
-					new BehaviorAction(&BT_Behaviors::Wander)
-					}
-				),
-
-				new BehaviorSequence
-				(
-					{
-						// checks if house is in FOV.
-					new BehaviorConditional(&BT_Conditions::IsHouseInView),
-					// seek house.
-					new BehaviorAction(&BT_Behaviors::SeekHouse)
-					}
-				),
+				
 
 					new BehaviorSequence
 				(
@@ -149,7 +179,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 
 
 				// Action node to wander.
-			new BehaviorAction(&BT_Behaviors::Wander)
+			//new BehaviorAction(&BT_Behaviors::Wander)
 			}
 		),
 			new BehaviorSelector
@@ -217,7 +247,7 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnZombieOnRightClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 0;
+	params.Seed = 36;
 	//params.Seed = 124;
 }
 
@@ -236,7 +266,8 @@ void Plugin::Update(float dt)
 	}
 	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Space))
 	{
-		m_CanRun = true;
+		//m_CanRun = true;
+		m_pGridCells->ResetPath();
 	}
 	else if (m_pInterface->Input_IsKeyboardKeyDown(Elite::eScancode_Left))
 	{
@@ -407,7 +438,7 @@ void Plugin::Render(float dt) const
 	m_pInterface->Draw_SolidCircle(m_Target, .7f, { 0,0 }, { 1, 0, 0 });
 
 	// World grid
-	for (const auto& cell : m_WorldGrid.GetCells())
+	for (const auto& cell : m_pGridCells->GetCells())
 	{
 		if (cell.isCellChecked)
 		{
@@ -419,7 +450,7 @@ void Plugin::Render(float dt) const
 		}
 	}
 
-	for (const auto& cell : m_WorldGrid.GetPath())
+	for (const auto& cell : m_pGridCells->GetPath())
 	{
 		if (cell.isCellChecked)
 		{

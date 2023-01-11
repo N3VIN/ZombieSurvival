@@ -313,6 +313,59 @@ namespace BT_Conditions
 		return false;
 	}
 
+	bool IsInCell(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		SteeringPlugin_Output* pSteering{};
+		CellSpace* pCellSpace{ nullptr };
+		Cell* pCell{ nullptr };
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return false;
+		}
+
+		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
+		{
+			return false;
+		}
+
+		if (!pBlackboard->GetData("gridCells", pCellSpace) || pCellSpace == nullptr)
+		{
+			return false;
+		}
+
+		if (!pBlackboard->GetData("cells", pCell) || pCell == nullptr)
+		{
+			return false;
+		}
+
+		auto agentInfo = pInterface->Agent_GetInfo();
+
+		auto pathCells = pCellSpace->GetPath();
+		auto otherCells = pCellSpace->GetCells();
+
+		for (int i = 0; i < pathCells.size(); ++i)
+		{
+			if (Elite::Distance(agentInfo.Position, pathCells.at(i).center) < 1.5f)
+			{
+				pCellSpace->CheckedCellInPath(i);
+				return true;
+			}
+		}
+
+		for (int i = 0; i < otherCells.size(); ++i)
+		{
+			if (Elite::Distance(agentInfo.Position, otherCells.at(i).center) < 1.5f)
+			{
+				pCellSpace->CheckedCellInCells(i);
+				return true;
+			}
+		}
+
+		return false;
+
+	}
 }
 
 
@@ -837,6 +890,55 @@ namespace BT_Behaviors
 
 		return Elite::BehaviorState::Success;
 
+	}
+
+	Elite::BehaviorState SeekToNearestCell(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		SteeringPlugin_Output* pSteering{};
+		CellSpace* pCellSpace{ nullptr };
+		Cell* pCell{ nullptr };
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("gridCells", pCellSpace) || pCellSpace == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("cells", pCell) || pCell == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		auto agentInfo = pInterface->Agent_GetInfo();
+
+		auto cell = pCellSpace->GetNearestCellInPath(agentInfo.Position);
+
+		auto target = cell.center;
+
+		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+
+		pSteering->AutoOrient = true;
+		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
+		pSteering->LinearVelocity.Normalize();
+		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = false;
+
+		/*targetDirection.Normalize();
+		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
+		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
+		pSteering->AngularVelocity = (targetDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;*/
+
+		return Elite::BehaviorState::Success;
 	}
 
 	Elite::BehaviorState CheckRightSideHouse(Elite::Blackboard* pBlackboard)

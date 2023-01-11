@@ -44,14 +44,13 @@ CellSpace::CellSpace(float width, float height, int rows, int cols)
 	{
 		for (int j{ -m_NrOfCols / 2 }; j < m_NrOfCols / 2; ++j)
 		{
-			Cell cell{ m_CellWidth * j, m_CellHeight * i, m_CellWidth, m_CellHeight };
-			if (
-				(abs(j) == 3 && i <= 3 && i >= -3) || // sides
-				 abs(i) == 3 && j <= 3 && j >= -3 || // top
-				 (i == -4 && j <= 3 && j >= -4) || // bottom
-			     (i == 2 && j <= 1 && j >= -2)  || // top
-			     (j == 2 && i <= 2 && i >= -2)  || // right
-			     (j == -4 && i <= 3 && i >= -3) || // left
+			Cell cell{j * m_CellWidth, i * m_CellHeight, m_CellWidth, m_CellHeight };
+			if ((abs(j) == 3 && i <= 3 && i >= -3) ||	   // sides
+				 abs(i) == 3 && j <= 3 && j >= -3 ||	   // top
+				 (i == -4 && j <= 3 && j >= -4) ||		   // bottom
+			     (i == 2 && j <= 1 && j >= -2)  ||		   // top
+			     (j == 2 && i <= 2 && i >= -2)  ||		   // right
+			     (j == -4 && i <= 3 && i >= -3) ||		   // left
 			     (i >= -1 && i <= 0 && j >= -1 && j <= 0)) // center
 			{
 				m_Path.push_back(cell);
@@ -77,22 +76,38 @@ std::vector<Cell> CellSpace::GetPath() const
 Cell CellSpace::GetNearestCellInPath(const Elite::Vector2& position) const
 {
 	float smallestDistance{ FLT_MAX };
-	Cell nearestCell{m_Cells[ (m_NrOfCols * m_NrOfRows / 2) - 1 ]};
+	Cell nearestCell{};
 
 	for (auto cell : m_Path)
 	{
-		auto distance = Elite::Distance(cell.center, position);
-		if (distance < smallestDistance)
+		if (!cell.isCellChecked)
 		{
-			smallestDistance = distance;
-			nearestCell = cell;
+			const auto distance = Elite::Distance(cell.center, position);
+			if (distance < smallestDistance)
+			{
+				smallestDistance = distance;
+				nearestCell = cell;
+			}
 		}
 	}
 
 	return nearestCell;
 }
 
-void CellSpace::CheckedCell(const Elite::Vector2& position) const
+void CellSpace::CheckedCellInCells(int index)
 {
-	// mark the cell as checked. could be another effecient better method.
+	m_Cells.at(index).isCellChecked = true;
+}
+
+void CellSpace::CheckedCellInPath(int index)
+{
+	m_Path.at(index).isCellChecked = true;
+}
+
+void CellSpace::ResetPath()
+{
+	for (auto& cell : m_Path)
+	{
+		cell.isCellChecked = false;
+	}
 }

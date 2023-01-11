@@ -124,7 +124,7 @@ namespace Elite
 		std::function<bool(Blackboard*)> m_fpConditional = nullptr;
 	};
 
-	/*class BehaviorInvertConditional : public IBehavior
+	class BehaviorInvertConditional : public IBehavior
 	{
 	public:
 		explicit BehaviorInvertConditional(std::function<bool(Blackboard*)> fp) : m_fpConditional(fp) {}
@@ -132,7 +132,7 @@ namespace Elite
 
 	private:
 		std::function<bool(Blackboard*)> m_fpConditional = nullptr;
-	};*/
+	};
 
 	//-----------------------------------------------------------------
 	// BEHAVIOR TREE ACTION (IBehavior)
