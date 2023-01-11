@@ -188,6 +188,7 @@
     <ClInclude Include="EDecisionMaking.h" />
     <ClInclude Include="Inventory.h" />
     <ClInclude Include="Plugin.h" />
+    <ClInclude Include="SpacePartitioning.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Timer.h" />
   </ItemGroup>
@@ -195,6 +196,7 @@
     <ClCompile Include="EBehaviorTree.cpp" />
     <ClCompile Include="Inventory.cpp" />
     <ClCompile Include="Plugin.cpp" />
+    <ClCompile Include="SpacePartitioning.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>

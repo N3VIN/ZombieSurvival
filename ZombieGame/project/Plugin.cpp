@@ -36,8 +36,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pHousesChecked = new std::vector<HouseInfo>();
 	m_pInventory = new Inventory(m_pInterface);
 	m_pBittenTimer = new Timer(1.25f, false);
-	m_Health = 10;
-
+	m_WorldGrid = CellSpace(m_pInterface->World_GetInfo().Dimensions.x, m_pInterface->World_GetInfo().Dimensions.y, 14, 14);
 
 	Blackboard* pBlackboard = new Blackboard();
 	pBlackboard->AddData("steering", m_pSteeringOutputData);
@@ -49,7 +48,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	pBlackboard->AddData("housesChecked", m_pHousesChecked);
 	pBlackboard->AddData("inventory", m_pInventory);
 	pBlackboard->AddData("bittenTimer", m_pBittenTimer);
-	pBlackboard->AddData("health", m_Health);
 
 	m_pBehaviorTree = new BehaviorTree(pBlackboard, new BehaviorGroup
 	(
@@ -121,7 +119,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						// checks if inside house.
 					new BehaviorConditional(&BT_Conditions::IsInsideHouse),
 					// Add to houses checked.
-					new BehaviorAction(&BT_Behaviors::AddToHousesChecked),
+					//new BehaviorAction(&BT_Behaviors::AddToHousesChecked),
 					// Wander inside house.
 					new BehaviorAction(&BT_Behaviors::Wander)
 					}
@@ -219,7 +217,7 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnZombieOnRightClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 36;
+	params.Seed = 0;
 	//params.Seed = 124;
 }
 
@@ -407,6 +405,31 @@ void Plugin::Render(float dt) const
 {
 	//This Render function should only contain calls to Interface->Draw_... functions
 	m_pInterface->Draw_SolidCircle(m_Target, .7f, { 0,0 }, { 1, 0, 0 });
+
+	// World grid
+	for (const auto& cell : m_WorldGrid.GetCells())
+	{
+		if (cell.isCellChecked)
+		{
+			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.f, 1.f, 0.f });
+		}
+		else
+		{
+			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 1.f, 0.f, 0.f });
+		}
+	}
+
+	for (const auto& cell : m_WorldGrid.GetPath())
+	{
+		if (cell.isCellChecked)
+		{
+			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.f, 0.f, 1.f });
+		}
+		else
+		{
+			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 1.f, 0.063f, 0.941f });
+		}
+	}
 
 	//m_pInterface->Draw_SolidCircle(m_pInterface->World_GetInfo().Center, 325, { 0,0 }, { 0, 0, 1 });
 }

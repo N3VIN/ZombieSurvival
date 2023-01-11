@@ -164,6 +164,24 @@ namespace BT_Conditions
 		
 		if (Elite::Distance(agentInfo.Position, house.Center) < 1.5f)
 		{
+			for (int i{ 0 }; i < pHouseInfos->size(); ++i)
+			{
+				if (pHousesChecked->empty())
+				{
+					pHousesChecked->push_back(pHouseInfos->at(i));
+
+				}
+
+				for (int j{ 0 }; j < pHousesChecked->size(); ++j)
+				{
+					if (pHouseInfos->at(i).Center != pHousesChecked->at(j).Center)
+					{
+						pHousesChecked->push_back(pHouseInfos->at(i));
+					}
+				}
+
+			}
+
 			return true;
 		}
 

@@ -5,6 +5,7 @@
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="EBehaviorTree.cpp" />
     <ClCompile Include="Inventory.cpp" />
+    <ClCompile Include="SpacePartitioning.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Plugin.h" />
@@ -15,5 +16,6 @@
     <ClInclude Include="EBlackboard.h" />
     <ClInclude Include="Timer.h" />
     <ClInclude Include="Inventory.h" />
+    <ClInclude Include="SpacePartitioning.h" />
   </ItemGroup>
 </Project>
