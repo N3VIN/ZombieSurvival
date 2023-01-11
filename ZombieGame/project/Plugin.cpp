@@ -411,7 +411,7 @@ void Plugin::Render(float dt) const
 	{
 		if (cell.isCellChecked)
 		{
-			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.f, 1.f, 0.f });
+			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.0f, 0.5f, 0.2f });
 		}
 		else
 		{
@@ -423,11 +423,11 @@ void Plugin::Render(float dt) const
 	{
 		if (cell.isCellChecked)
 		{
-			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.f, 0.f, 1.f });
+			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.f, 1.f, 0.f });
 		}
 		else
 		{
-			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 1.f, 0.063f, 0.941f });
+			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 0.f, 0.f, 1.f });
 		}
 	}
 

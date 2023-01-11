@@ -50,13 +50,13 @@ CellSpace::CellSpace(float width, float height, int rows, int cols)
 		{
 			Cell cell{ m_CellWidth * j, m_CellHeight * i, m_CellWidth, m_CellHeight };
 			if (
-				(abs(j) == num && i <= num && i >= -num) || // sides
-				 abs(i) == num && j <= num && j >= -num  || // top
+				(abs(j) == 3 && i <= 3 && i >= -3) || // sides
+				 abs(i) == 3 && j <= 3 && j >= -3 || // top
 				 (i == -4 && j <= 3 && j >= -4) || // bottom
 			     (i == 2 && j <= 1 && j >= -2)  || // top
 			     (j == 2 && i <= 2 && i >= -2)  || // right
 			     (j == -4 && i <= 3 && i >= -3) || // left
-			     (i >= -1 && i <= 0 && j >= -1 && j <= 0))
+			     (i >= -1 && i <= 0 && j >= -1 && j <= 0)) // center
 			{
 				m_Path.push_back(cell);
 			}
