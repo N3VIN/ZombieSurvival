@@ -40,10 +40,6 @@ CellSpace::CellSpace(float width, float height, int rows, int cols)
 	, m_CellWidth(width / cols)
 	, m_CellHeight(height / rows)
 {
-	// add to m_Cells and m_Path.
-
-	int num{ 3 }; // was 6 for him.
-
 	for (int i{ -m_NrOfRows / 2 }; i < m_NrOfRows / 2; ++i)
 	{
 		for (int j{ -m_NrOfCols / 2 }; j < m_NrOfCols / 2; ++j)
