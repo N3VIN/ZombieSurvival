@@ -108,11 +108,6 @@ namespace BT_Conditions
 
 		auto agentInfo = pInterface->Agent_GetInfo();
 
-		/*if (agentInfo.Bitten)
-		{
-			return true;
-		}*/
-
 		if (agentInfo.Bitten)
 		{
 			pBittenTimer->Enable();
@@ -153,13 +148,8 @@ namespace BT_Conditions
 		HouseInfo house{};
 		for (int i{ 0 }; i < pHouseInfos->size(); ++i)
 		{
-			//for (int j{ 0 }; j < pHousesChecked->size(); ++j)
-			{
-				//if (pHouseInfos->at(i).Center != pHousesChecked->at(j).Center)
-				{
-					house = pHouseInfos->at(i);
-				}
-			}
+
+			house = pHouseInfos->at(i);
 		}
 		
 		if (Elite::Distance(agentInfo.Position, house.Center) < 1.5f)
@@ -237,9 +227,9 @@ namespace BT_Conditions
 			return false;
 		}
 
-		auto currentHealth = pInterface->Agent_GetInfo().Health;
+		const auto currentHealth = pInterface->Agent_GetInfo().Health;
 
-		float medKitMin{ 6.f };
+		constexpr float medKitMin{ 6.f };
 
 		if (currentHealth <= medKitMin)
 		{
@@ -267,9 +257,9 @@ namespace BT_Conditions
 			return false;
 		}
 
-		auto currentEnergy = pInterface->Agent_GetInfo().Energy;
+		const auto currentEnergy = pInterface->Agent_GetInfo().Energy;
 
-		float foodMin{ 5.f };
+		constexpr float foodMin{ 5.f };
 
 		if (currentEnergy <= foodMin)
 		{
@@ -309,7 +299,7 @@ namespace BT_Conditions
 			return false;
 		}
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		auto pathCells = pCellSpace->GetPath();
 		auto otherCells = pCellSpace->GetCells();
@@ -339,65 +329,6 @@ namespace BT_Conditions
 
 namespace BT_Behaviors
 {
-
-	Elite::BehaviorState Wander(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-		SteeringPlugin_Output* pSteering{};
-		Timer* pBittenTimer{ nullptr };
-
-
-		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("bittenTimer", pBittenTimer) || pBittenTimer == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		pBittenTimer->ResetTimer();
-		pBittenTimer->Disable();
-
-		auto agentInfo = pInterface->Agent_GetInfo();
-
-		float wanderAngle{ agentInfo.Orientation };
-		const float randomAngle{ Elite::ToRadians(static_cast<float>(rand() % static_cast<int>(Elite::ToDegrees(10.f)))) };
-		float sign{};
-		if (rand() % 2 == 0)
-		{
-			sign = -1;
-		}
-		else
-		{
-			sign = 1;
-		}
-		const float nextAngle{ wanderAngle + (sign * randomAngle) };
-		wanderAngle = nextAngle;
-
-		Elite::Vector2 circleCenter{ agentInfo.Position + (Elite::Vector2 {std::cosf(agentInfo.Orientation), std::sinf(agentInfo.Orientation) } *10.f) };
-		Elite::Vector2 target{ circleCenter.x + (std::cosf(wanderAngle) * 7.f),circleCenter.y + (std::sinf(wanderAngle) * 7.f) };
-		Elite::Vector2 targetVector{ target - agentInfo.Position };
-
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
-
-		pSteering->AutoOrient = true;
-		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
-		pSteering->LinearVelocity.Normalize();	  
-		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-		pSteering->RunMode = false;
-
-		pInterface->Draw_Circle(circleCenter, 7.f, Elite::Vector3{ 0,1,0 });
-		pInterface->Draw_Direction(agentInfo.Position, targetVector, 10.f, Elite::Vector3{ 0,1,0 });
-
-		return Elite::BehaviorState::Success;
-	}
 
 	Elite::BehaviorState FleeFromEnemy(Elite::Blackboard* pBlackboard)
 	{
@@ -431,7 +362,7 @@ namespace BT_Behaviors
 		pBittenTimer->ResetTimer();
 		pBittenTimer->Disable();
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		EnemyInfo enemy{};
 
@@ -440,13 +371,11 @@ namespace BT_Behaviors
 			enemy = pEnemyInfos->at(i);
 		}
 
-		Elite::Vector2 desiredDirection = (enemy.Location - agentInfo.Position);
+		const Elite::Vector2 fleeDirection = (enemy.Location - agentInfo.Position);
 
-		//auto target = enemy.Location - desiredDirection.GetNormalized();
-		auto target = enemy.Location - desiredDirection.GetNormalized() * 20.f;
-		//auto target = enemy.Location - agentInfo.Position;
+		const auto target = enemy.Location - fleeDirection.GetNormalized() * 20.f;
 
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
 		pSteering->AutoOrient = false;
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
@@ -486,7 +415,7 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		EnemyInfo enemy{};
 
@@ -495,22 +424,23 @@ namespace BT_Behaviors
 			enemy = pEnemyInfos->at(i);
 		}
 
-		auto cell = pCellSpace->GetNearestCellInPath(agentInfo.Position);
+		const auto cell = pCellSpace->GetNearestCellInPath(agentInfo.Position);
 
-		auto target = cell.center;
+		const auto target = cell.center;
 
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
 
 		auto backDirection = -agentInfo.LinearVelocity;
+		backDirection.Normalize();
 
 		pSteering->AutoOrient = false;
-		backDirection.Normalize();
-		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
-		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
+		const float agentRotation{ agentInfo.Orientation + 0.5f * M_PI };
+
+		const Elite::Vector2 agentDirection{ std::cosf(agentRotation),std::sinf(agentRotation) };
 		pSteering->AngularVelocity = (backDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
 
 		return Elite::BehaviorState::Success;
@@ -543,19 +473,14 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		HouseInfo house{};
 		for (int i{ 0 }; i < pHouseInfos->size(); ++i)
 		{
-			//for (int j{ 0 }; j < pHousesChecked->size(); ++j)
-			{
-				//if (pHouseInfos->at(i).Center != pHousesChecked->at(j).Center)
-				{
-					house = pHouseInfos->at(i);
-				}
-			}
+			house = pHouseInfos->at(i);
 		}
+
 		for (int i{ 0 }; i < pHousesChecked->size(); ++i)
 		{
 			if (pHousesChecked->at(i).Center == house.Center)
@@ -565,12 +490,11 @@ namespace BT_Behaviors
 			}
 		}
 
-
-		auto target = house.Center;
+		const auto target = house.Center;
 
 		auto targetDirection = target - agentInfo.Position;
 
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
 		pSteering->AutoOrient = false;
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
@@ -579,12 +503,78 @@ namespace BT_Behaviors
 		pSteering->RunMode = false;
 
 		targetDirection.Normalize();
-		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
-		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
+		const float agentRotation{ agentInfo.Orientation + 0.5f * M_PI };
+
+		const Elite::Vector2 agentDirection{ std::cosf(agentRotation),std::sinf(agentRotation) };
 		pSteering->AngularVelocity = (targetDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
 
 		return Elite::BehaviorState::Running;
 
+	}
+
+	Elite::BehaviorState Wander(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		SteeringPlugin_Output* pSteering{};
+		Timer* pBittenTimer{ nullptr };
+
+
+		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		if (!pBlackboard->GetData("bittenTimer", pBittenTimer) || pBittenTimer == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
+
+		pBittenTimer->ResetTimer();
+		pBittenTimer->Disable();
+
+		const auto agentInfo = pInterface->Agent_GetInfo();
+
+		float wanderAngle{ agentInfo.Orientation };
+		const float randomAngle{ Elite::ToRadians(static_cast<float>(rand() % static_cast<int>(Elite::ToDegrees(10.f)))) };
+		float sign{};
+		if (rand() % 2 == 0)
+		{
+			sign = -1;
+		}
+		else
+		{
+			sign = 1;
+		}
+		const float nextAngle{ wanderAngle + (sign * randomAngle) };
+		wanderAngle = nextAngle;
+
+		const Elite::Vector2 circleCenter{
+			agentInfo.Position + (Elite::Vector2{
+				std::cosf(agentInfo.Orientation), std::sinf(agentInfo.Orientation)
+			} * 10.f)
+		};
+		const Elite::Vector2 target{
+			circleCenter.x + (std::cosf(wanderAngle) * 7.f), circleCenter.y + (std::sinf(wanderAngle) * 7.f)
+		};
+		const Elite::Vector2 targetVector{ target - agentInfo.Position };
+
+		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+
+		pSteering->AutoOrient = true;
+		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
+		pSteering->LinearVelocity.Normalize();
+		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = false;
+
+		pInterface->Draw_Circle(circleCenter, 7.f, Elite::Vector3{ 0,1,0 });
+		pInterface->Draw_Direction(agentInfo.Position, targetVector, 10.f, Elite::Vector3{ 0,1,0 });
+
+		return Elite::BehaviorState::Success;
 	}
 
 	Elite::BehaviorState AddToHousesChecked(Elite::Blackboard* pBlackboard)
@@ -621,11 +611,6 @@ namespace BT_Behaviors
 
 		}
 
-		/*for (int i{ 0 }; i < pHouseInfos->size(); ++i)
-		{
-			pHousesChecked->push_back(pHouseInfos->at(i));
-		}*/
-
 		return Elite::BehaviorState::Success;
 
 	}
@@ -657,7 +642,7 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		EntityInfo item{};
 		for (int i{ 0 }; i < pItemsInfos->size(); ++i)
@@ -665,9 +650,9 @@ namespace BT_Behaviors
 			item = pItemsInfos->at(i);
 		}
 
-		auto target = item.Location;
+		const auto target = item.Location;
 
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
 		pSteering->AutoOrient = true;
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
@@ -713,7 +698,7 @@ namespace BT_Behaviors
 			return Elite::BehaviorState::Failure;
 		}
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		EnemyInfo enemy{};
 		for (int i{ 0 }; i < pEnemyInfos->size(); ++i)
@@ -723,12 +708,14 @@ namespace BT_Behaviors
 
 		Elite::Vector2 enemyDirection = (enemy.Location - agentInfo.Position);
 		enemyDirection.Normalize();
-		const float agentRot{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
-		Elite::Vector2 agentDirection{ std::cosf(agentRot),std::sinf(agentRot) };
+		const float agentRotation{ agentInfo.Orientation + 0.5f * static_cast<float>(M_PI) };
+
+		const auto orientation = std::abs(agentInfo.Orientation - std::atan2(enemyDirection.y, enemyDirection.x));
+		const Elite::Vector2 agentDirection{ std::cosf(agentRotation),std::sinf(agentRotation) };
 		pSteering->AngularVelocity = (enemyDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
 		pSteering->RunMode = false;
 
-		if (std::abs(agentInfo.Orientation - std::atan2(enemyDirection.y, enemyDirection.x)) < 0.05f)
+		if (orientation < 0.05f)
 		{
 			if (pInventory->UseGun())
 			{
@@ -774,38 +761,6 @@ namespace BT_Behaviors
 		return Elite::BehaviorState::Failure;
 	}
 
-	Elite::BehaviorState MoveToCenter(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-		SteeringPlugin_Output* pSteering{};
-
-		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		auto agentInfo = pInterface->Agent_GetInfo();
-		auto worldInfo = pInterface->World_GetInfo();
-
-		auto target = worldInfo.Center;
-
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
-
-		pSteering->AutoOrient = false;
-		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
-		pSteering->LinearVelocity.Normalize();
-		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-		pSteering->RunMode = false;
-
-		return Elite::BehaviorState::Success;
-
-	}
-
 	Elite::BehaviorState FleeFromPurgeZone(Elite::Blackboard* pBlackboard)
 	{
 		IExamInterface* pInterface{ nullptr };
@@ -828,7 +783,7 @@ namespace BT_Behaviors
 		}
 
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		PurgeZoneInfo purgeZone{};
 
@@ -837,13 +792,11 @@ namespace BT_Behaviors
 			purgeZone = pPurgeZoneInfos->at(i);
 		}
 
-		Elite::Vector2 desiredDirection = (purgeZone.Center + agentInfo.Position);
+		const Elite::Vector2 desiredDirection = (purgeZone.Center + agentInfo.Position);
 
-		auto target = -desiredDirection.GetNormalized() * 20.f;
+		const auto target = -desiredDirection.GetNormalized() * 20.f;
 
-		//auto target = Elite::Vector2 { purgeZone.Center.x + purgeZone.Radius, purgeZone.Center.y + purgeZone.Radius };
-
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
 		pSteering->AutoOrient = false;
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
@@ -892,14 +845,13 @@ namespace BT_Behaviors
 		pBittenTimer->ResetTimer();
 		pBittenTimer->Disable();
 
-		auto agentInfo = pInterface->Agent_GetInfo();
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
-		auto cell = pCellSpace->GetNearestCellInPath(agentInfo.Position);
-		
+		const auto cell = pCellSpace->GetNearestCellInPath(agentInfo.Position);
 
-		auto target = cell.center;
+		const auto target = cell.center;
 
-		auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
 		if (agentInfo.Stamina <= 3.f)
 		{

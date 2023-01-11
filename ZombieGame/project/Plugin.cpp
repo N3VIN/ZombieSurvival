@@ -37,7 +37,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pInventory = new Inventory(m_pInterface);
 	m_pBittenTimer = new Timer(2.5f, false);
 	m_pGridCells = new CellSpace(m_pInterface->World_GetInfo().Dimensions.x, m_pInterface->World_GetInfo().Dimensions.y, 14, 14);
-	m_pCell = new Cell();
 
 
 	Blackboard* pBlackboard = new Blackboard();
@@ -51,7 +50,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	pBlackboard->AddData("inventory", m_pInventory);
 	pBlackboard->AddData("bittenTimer", m_pBittenTimer);
 	pBlackboard->AddData("gridCells", m_pGridCells);
-	pBlackboard->AddData("cells", m_pCell);
 
 	m_pBehaviorTree = new BehaviorTree(pBlackboard, new BehaviorGroup
 	(
@@ -60,9 +58,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 			new BehaviorSelector
 			(
 				{
-
-					
-
 							new BehaviorSequence
 						(
 							{
@@ -80,10 +75,8 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 												// Shoot.
 												new BehaviorAction(&BT_Behaviors::Shoot)
 											}
-											// else
 										),
 									// flee fom enemy.
-									//new BehaviorAction(&BT_Behaviors::FleeFromEnemy)
 									new BehaviorAction(&BT_Behaviors::TurnAround)
 								}
 							)
@@ -104,21 +97,19 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						new BehaviorSequence
 						(
 							{
-								// checks if item is in FOV.
-							new BehaviorConditional(&BT_Conditions::IsItemInView),
-								// Pickup items in FOV.
+									// checks if item is in FOV.
+								new BehaviorConditional(&BT_Conditions::IsItemInView),
+									// Pickup items in FOV.
 								new BehaviorAction(&BT_Behaviors::PickupItemsFOV)
-						}
+								}
 					),
 
 					new BehaviorSequence
 					(
 					{
-							// checks if inside house.
+								// checks if inside house.
 							new BehaviorConditional(&BT_Conditions::IsInsideHouse),
-							// Add to houses checked.
-							//new BehaviorAction(&BT_Behaviors::AddToHousesChecked),
-							// Wander inside house.
+								// Wander inside house.
 							new BehaviorAction(&BT_Behaviors::Wander)
 							}
 						),
@@ -149,10 +140,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						)
 					}
 				),
-
-
-				// Action node to wander.
-			//new BehaviorAction(&BT_Behaviors::Wander)
 			}
 		),
 			new BehaviorSelector
@@ -215,6 +202,15 @@ void Plugin::DllShutdown()
 
 	SAFE_DELETE(m_pBehaviorTree);
 	SAFE_DELETE(m_pSteeringOutputData);
+	SAFE_DELETE(m_pItemsInFOV);
+	SAFE_DELETE(m_pEnemiesInFOV);
+	SAFE_DELETE(m_pPurgeZoneInFOV);
+	SAFE_DELETE(m_pHousesInFov);
+	SAFE_DELETE(m_pHousesChecked);
+	SAFE_DELETE(m_pInventory);
+	SAFE_DELETE(m_pBittenTimer);
+	SAFE_DELETE(m_pGridCells);
+
 }
 
 //Called only once, during initialization
@@ -236,7 +232,7 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
 	//params.Seed = 36;
-	params.Seed = 1234;
+	params.Seed = 12345;
 }
 
 //Only Active in DEBUG Mode
@@ -325,108 +321,8 @@ SteeringPlugin_Output Plugin::UpdateSteering(float dt)
 	{
 		m_pHousesChecked->clear();
 	}
-	
-	
 
 	m_pBehaviorTree->GetBlackboard()->GetData("steering", pSteering);
-
-	/*float oldHealth{};
-	if (m_pBehaviorTree->GetBlackboard()->GetData("health", oldHealth))
-	{
-		float currentHealth{ m_pInterface->Agent_GetInfo().Health };
-		if (oldHealth > currentHealth)
-		{
-			m_pBittenTimer->Enable();
-			m_pBittenTimer->ResetTimer();
-			m_pBehaviorTree->GetBlackboard()->ChangeData("health", currentHealth);
-		}
-	}*/
-
-
-
-	//pSteering->RunMode = false;
-
-
-
-#ifdef DEMO_STEERING
-	//Use the Interface (IAssignmentInterface) to 'interface' with the AI_Framework
-	auto agentInfo = m_pInterface->Agent_GetInfo();
-
-
-	//Use the navmesh to calculate the next navmesh point
-	//auto nextTargetPos = m_pInterface->NavMesh_GetClosestPathPoint(checkpointLocation);
-
-	//OR, Use the mouse target
-	auto nextTargetPos = m_pInterface->NavMesh_GetClosestPathPoint(m_Target); //Uncomment this to use mouse position as guidance
-
-	auto vHousesInFOV = GetHousesInFOV();//uses m_pInterface->Fov_GetHouseByIndex(...)
-	auto vEntitiesInFOV = GetEntitiesInFOV(); //uses m_pInterface->Fov_GetEntityByIndex(...)
-
-	for (auto& e : vEntitiesInFOV)
-	{
-		if (e.Type == eEntityType::PURGEZONE)
-		{
-			PurgeZoneInfo zoneInfo;
-			m_pInterface->PurgeZone_GetInfo(e, zoneInfo);
-			//std::cout << "Purge Zone in FOV:" << e.Location.x << ", "<< e.Location.y << "---Radius: "<< zoneInfo.Radius << std::endl;
-		}
-	}
-
-	//INVENTORY USAGE DEMO
-	//********************
-
-	if (m_GrabItem)
-	{
-		ItemInfo item;
-		//Item_Grab > When DebugParams.AutoGrabClosestItem is TRUE, the Item_Grab function returns the closest item in range
-		//Keep in mind that DebugParams are only used for debugging purposes, by default this flag is FALSE
-		//Otherwise, use GetEntitiesInFOV() to retrieve a vector of all entities in the FOV (EntityInfo)
-		//Item_Grab gives you the ItemInfo back, based on the passed EntityHash (retrieved by GetEntitiesInFOV)
-		if (m_pInterface->Item_Grab({}, item))
-		{
-			//Once grabbed, you can add it to a specific inventory slot
-			//Slot must be empty
-			m_pInterface->Inventory_AddItem(m_InventorySlot, item);
-		}
-	}
-
-	if (m_UseItem)
-	{
-		//Use an item (make sure there is an item at the given inventory slot)
-		m_pInterface->Inventory_UseItem(m_InventorySlot);
-	}
-
-	if (m_RemoveItem)
-	{
-		//Remove an item from a inventory slot
-		m_pInterface->Inventory_RemoveItem(m_InventorySlot);
-	}
-
-	//Simple Seek Behaviour (towards Target)
-	steering.LinearVelocity = nextTargetPos - agentInfo.Position; //Desired Velocity
-	steering.LinearVelocity.Normalize(); //Normalize Desired Velocity
-	steering.LinearVelocity *= agentInfo.MaxLinearSpeed; //Rescale to Max Speed
-
-	if (Distance(nextTargetPos, agentInfo.Position) < 2.f)
-	{
-		steering.LinearVelocity = Elite::ZeroVector2;
-	}
-
-	//steering.AngularVelocity = m_AngSpeed; //Rotate your character to inspect the world while walking
-	steering.AutoOrient = true; //Setting AutoOrient to TRue overrides the AngularVelocity
-
-	steering.RunMode = m_CanRun; //If RunMode is True > MaxLinSpd is increased for a limited time (till your stamina runs out)
-
-	//SteeringPlugin_Output is works the exact same way a SteeringBehaviour output
-
-//@End (Demo Purposes)
-	m_GrabItem = false; //Reset State
-	m_UseItem = false;
-	m_RemoveItem = false;
-
-#endif
-
-	return *pSteering;
 }
 
 //This function should only be used for rendering debug elements
@@ -498,9 +394,9 @@ vector<EntityInfo> Plugin::GetEntitiesInFOV() const
 	return vEntitiesInFOV;
 }
 
-void Plugin::UpdateEntitiesInFOV()
+void Plugin::UpdateEntitiesInFOV() const
 {
-	std::vector<EntityInfo> entitesInFOV = GetEntitiesInFOV();
+	const std::vector<EntityInfo> entitesInFOV = GetEntitiesInFOV();
 
 	m_pEnemiesInFOV->clear();
 	m_pItemsInFOV->clear();
@@ -531,13 +427,10 @@ void Plugin::UpdateEntitiesInFOV()
 	m_pBehaviorTree->GetBlackboard()->ChangeData("purgeZoneInFOV", m_pPurgeZoneInFOV);
 }
 
-void Plugin::UpdateHousesInFOV()
+void Plugin::UpdateHousesInFOV() const
 {
-	std::vector<HouseInfo> housesInFOV = GetHousesInFOV();
+	const std::vector<HouseInfo> housesInFOV = GetHousesInFOV();
 	m_pHousesInFov->clear();
-	//m_pHousesInFov = &housesInFOV;
-
-	//m_pHousesInFov = &GetHousesInFOV();
 
 	for(auto house : housesInFOV)
 	{

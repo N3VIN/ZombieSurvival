@@ -59,16 +59,10 @@ private:
 	std::vector<Cell> m_Cells;
 	std::vector<Cell> m_Path;
 
-	float m_SpaceWidth;
-	float m_SpaceHeight;
-
 	int m_NrOfRows;
 	int m_NrOfCols;
 
 	float m_CellWidth;
 	float m_CellHeight;
-
-	// Helper functions
-
 
 };

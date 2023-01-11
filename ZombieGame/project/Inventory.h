@@ -3,7 +3,6 @@
 #include "Exam_HelperStructs.h"
 #include "IExamInterface.h"
 
-
 class Inventory
 {
 public:

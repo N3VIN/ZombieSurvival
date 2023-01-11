@@ -33,9 +33,7 @@ std::vector<Elite::Vector2> Cell::GetRectPoints() const
 // --- Partitioned Space ---
 // -------------------------
 CellSpace::CellSpace(float width, float height, int rows, int cols)
-	: m_SpaceWidth(width)
-	, m_SpaceHeight(height)
-	, m_NrOfRows(rows)
+	: m_NrOfRows(rows)
 	, m_NrOfCols(cols)
 	, m_CellWidth(width / cols)
 	, m_CellHeight(height / rows)

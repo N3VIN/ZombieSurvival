@@ -3,8 +3,6 @@
 #include "Exam_HelperStructs.h"
 
 #include "EDecisionMaking.h"
-#include "EBehaviorTree.h"
-#include "EBlackboard.h"
 #include "Inventory.h"
 #include "Timer.h"
 #include "SpacePartitioning.h"
@@ -34,8 +32,8 @@ private:
 	std::vector<HouseInfo> GetHousesInFOV() const;
 	std::vector<EntityInfo> GetEntitiesInFOV() const;
 
-	void UpdateEntitiesInFOV();
-	void UpdateHousesInFOV();
+	void UpdateEntitiesInFOV() const;
+	void UpdateHousesInFOV() const;
 
 
 	Elite::Vector2 m_Target = {};
@@ -58,7 +56,6 @@ private:
 	Inventory* m_pInventory;
 	Timer* m_pBittenTimer;
 	CellSpace* m_pGridCells;
-	Cell* m_pCell;
 
 
 

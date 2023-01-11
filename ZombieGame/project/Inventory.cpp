@@ -4,14 +4,12 @@
 Inventory::Inventory(IExamInterface* pInterface)
 	: m_pInterface{pInterface}
 {
-	m_Inventory.reserve(m_pInterface->Inventory_GetCapacity());
+	//m_Inventory.reserve(m_pInterface->Inventory_GetCapacity());
 
 	for (int i{}; i < m_pInterface->Inventory_GetCapacity(); ++i)
 	{
 		m_Inventory.push_back(eItemType::RANDOM_DROP);
 	}
-
-	//m_Inventory. eItemType::RANDOM_DROP;
 
 }
 
@@ -21,16 +19,6 @@ bool Inventory::PickupItem(EntityInfo entityInfo)
 	{
 		return false;
 	}
-
-	/*if(IsItemAvailable(eItemType::SHOTGUN))
-	{
-		return false;
-	}
-
-	if (IsItemAvailable(eItemType::PISTOL))
-	{
-		return false;
-	}*/
 
 	ItemInfo itemInfo{};
 	m_pInterface->Item_GetInfo(entityInfo, itemInfo);
@@ -60,10 +48,6 @@ bool Inventory::PickupItem(EntityInfo entityInfo)
 
 	if (m_pInterface->Item_Grab(entityInfo, itemInfo))
 	{
-		
-
-		//emptySlotId = GetFreeItemSlot();
-
 		m_pInterface->Inventory_AddItem(emptySlotId, itemInfo);
 
 		m_Inventory.at(emptySlotId) = itemInfo.Type;
@@ -79,8 +63,9 @@ bool Inventory::PickupMedkit(EntityInfo entityInfo)
 	ItemInfo itemInfo{};
 	m_pInterface->Item_GetInfo(entityInfo, itemInfo);
 
-	UINT slot3 = 3U;
-	UINT slot4 = 4U;
+	const UINT slot3 = 3U;
+	const UINT slot4 = 4U;
+
 	if (m_Inventory.at(slot3) != eItemType::FOOD)
 	{
 		if (m_pInterface->Item_Grab(entityInfo, itemInfo))
@@ -101,7 +86,6 @@ bool Inventory::PickupMedkit(EntityInfo entityInfo)
 			return true;
 		}
 	}
-	
 
 	return false;
 }
