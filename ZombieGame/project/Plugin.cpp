@@ -34,6 +34,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pPurgeZoneInFOV = new std::vector<PurgeZoneInfo>();
 	m_pHousesInFov = new std::vector<HouseInfo>();
 	m_pHousesChecked = new std::vector<HouseInfo>();
+	m_pHousesSearch = new std::vector<HouseSearch>();
 	m_pInventory = new Inventory(m_pInterface);
 	m_pBittenTimer = new Timer(2.5f, false);
 	m_pGridCells = new CellSpace(m_pInterface->World_GetInfo().Dimensions.x, m_pInterface->World_GetInfo().Dimensions.y, 14, 14);
@@ -47,6 +48,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	pBlackboard->AddData("purgeZoneInFOV", m_pPurgeZoneInFOV);
 	pBlackboard->AddData("housesInFOV", m_pHousesInFov);
 	pBlackboard->AddData("housesChecked", m_pHousesChecked);
+	pBlackboard->AddData("housesSearch", m_pHousesSearch);
 	pBlackboard->AddData("inventory", m_pInventory);
 	pBlackboard->AddData("bittenTimer", m_pBittenTimer);
 	pBlackboard->AddData("gridCells", m_pGridCells);
@@ -54,7 +56,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pBehaviorTree = new BehaviorTree(pBlackboard, new BehaviorGroup
 	(
 		{
-			// Selector node for the world.
 			new BehaviorSelector
 			(
 				{
@@ -108,9 +109,11 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					(
 					{
 								// checks if inside house.
-							new BehaviorConditional(&BT_Conditions::IsInsideHouse),
+								new BehaviorConditional(&BT_Conditions::IsInsideHouse),
+								new BehaviorAction(&BT_Behaviors::SearchHouse),
 								// Wander inside house.
-							new BehaviorAction(&BT_Behaviors::Wander)
+								//new BehaviorAction(&BT_Behaviors::Wander)
+								//new BehaviorAction(&BT_Behaviors::ExitHouse)
 							}
 						),
 
@@ -118,9 +121,9 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					(
 					{
 							// checks if house is in FOV.
-						new BehaviorConditional(&BT_Conditions::IsHouseInView),
+							new BehaviorConditional(&BT_Conditions::IsHouseInView),
 							// seek house.
-						new BehaviorAction(&BT_Behaviors::SeekHouse)
+							new BehaviorAction(&BT_Behaviors::SeekHouse)
 						}
 					),
 
@@ -207,6 +210,7 @@ void Plugin::DllShutdown()
 	SAFE_DELETE(m_pPurgeZoneInFOV);
 	SAFE_DELETE(m_pHousesInFov);
 	SAFE_DELETE(m_pHousesChecked);
+	SAFE_DELETE(m_pHousesSearch);
 	SAFE_DELETE(m_pInventory);
 	SAFE_DELETE(m_pBittenTimer);
 	SAFE_DELETE(m_pGridCells);
@@ -219,8 +223,8 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.AutoFollowCam = true; //Automatically follow the AI? (Default = true)
 	params.RenderUI = true; //Render the IMGUI Panel? (Default = true)
 	params.SpawnEnemies = true; //Do you want to spawn enemies? (Default = true)
-	params.EnemyCount = 20; //How many enemies? (Default = 20)
-	params.GodMode = false; //GodMode > You can't die, can be useful to inspect certain behaviors (Default = false)
+	params.EnemyCount = 1; //How many enemies? (Default = 20)
+	params.GodMode = true; //GodMode > You can't die, can be useful to inspect certain behaviors (Default = false)
 	params.LevelFile = "GameLevel.gppl";
 	params.AutoGrabClosestItem = true; //A call to Item_Grab(...) returns the closest item that can be grabbed. (EntityInfo argument is ignored)
 	params.StartingDifficultyStage = 1;
@@ -231,8 +235,8 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnZombieOnRightClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	//params.Seed = 36;
-	params.Seed = 12345;
+	params.Seed = 36;
+	//params.Seed = 12345;
 }
 
 //Only Active in DEBUG Mode
@@ -434,10 +438,26 @@ void Plugin::UpdateHousesInFOV() const
 	const std::vector<HouseInfo> housesInFOV = GetHousesInFOV();
 	m_pHousesInFov->clear();
 
-	for(auto house : housesInFOV)
+	if (!housesInFOV.empty())
 	{
-		m_pHousesInFov->push_back(house);
+		m_pHousesInFov->emplace_back(housesInFOV.at(0));
+		
+		bool found{ false };
+		for (const auto& houseSearch : *m_pHousesSearch)
+		{
+			if (m_pHousesInFov->at(0).Center == houseSearch.Center)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+		{
+			m_pHousesSearch->emplace_back(HouseSearch{ housesInFOV.at(0) });
+		}
 	}
 
+
 	m_pBehaviorTree->GetBlackboard()->ChangeData("housesInFOV", m_pHousesInFov);
+	m_pBehaviorTree->GetBlackboard()->ChangeData("housesSearch", m_pHousesSearch);
 }

@@ -53,6 +53,7 @@ private:
 	std::vector<PurgeZoneInfo>* m_pPurgeZoneInFOV;
 	std::vector<HouseInfo>* m_pHousesInFov;
 	std::vector<HouseInfo>* m_pHousesChecked;
+	std::vector<HouseSearch>* m_pHousesSearch;
 	Inventory* m_pInventory;
 	Timer* m_pBittenTimer;
 	CellSpace* m_pGridCells;

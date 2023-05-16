@@ -4,13 +4,10 @@
 Inventory::Inventory(IExamInterface* pInterface)
 	: m_pInterface{pInterface}
 {
-	//m_Inventory.reserve(m_pInterface->Inventory_GetCapacity());
-
 	for (int i{}; i < m_pInterface->Inventory_GetCapacity(); ++i)
 	{
 		m_Inventory.push_back(eItemType::RANDOM_DROP);
 	}
-
 }
 
 bool Inventory::PickupItem(EntityInfo entityInfo) 
@@ -63,8 +60,7 @@ bool Inventory::PickupMedkit(EntityInfo entityInfo)
 	ItemInfo itemInfo{};
 	m_pInterface->Item_GetInfo(entityInfo, itemInfo);
 
-	const UINT slot3 = 3U;
-	const UINT slot4 = 4U;
+	constexpr UINT slot3 = 3U;
 
 	if (m_Inventory.at(slot3) != eItemType::FOOD)
 	{
@@ -80,6 +76,7 @@ bool Inventory::PickupMedkit(EntityInfo entityInfo)
 	{
 		if (m_pInterface->Item_Grab(entityInfo, itemInfo))
 		{
+			constexpr UINT slot4 = 4U;
 			m_pInterface->Inventory_AddItem(slot4, itemInfo);
 
 			m_Inventory.at(slot4) = itemInfo.Type;

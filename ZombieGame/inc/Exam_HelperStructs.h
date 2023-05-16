@@ -113,6 +113,76 @@ struct HouseInfo
 	Elite::Vector2 Size;
 };
 
+struct HouseSearch : public HouseInfo
+{
+	/*HouseSearch()
+	{
+		
+	}*/
+
+	HouseSearch(const HouseInfo& hi)
+	{
+		this->Center = hi.Center;
+		this->Size = hi.Size;
+
+		Corner = 
+		{
+			{ Center - Size / 4.5f },
+			{ Center.x - Size.x / 4.5f, Center.y + Size.y / 4.5f },
+			{ Center + Size / 4.5f },
+			{ Center.x + Size.x / 4.5f, Center.y - Size.y / 4.5f },
+			{ Center - Size / 2.f }
+		};
+
+		Exit = { Center - Size / 2.f };
+	}
+
+	std::vector<bool> CornersBool{ false, false, false, false };
+	bool Checked{ false };
+	std::vector<Elite::Vector2> Corner{};
+	Elite::Vector2 Exit{};
+
+	Elite::Vector2 GetCornerPosition(int i)
+	{
+		//CornersBool.at(i) = true;
+		return Corner.at(i);
+	}
+
+	/*Elite::Vector2 GetCorner()
+	{
+		for (int i{ 0 }; i < CornersBool.size(); ++i)
+		{
+			if (CornersBool.at(i))
+			{
+				continue;
+			}
+
+			return GetCornerPosition(i);
+		}
+	}*/
+
+	/*void UpdateCheckedAndCorners(const Elite::Vector2& agentPos, const Elite::Vector2& target)
+	{
+		const float distance{ 1.f };
+		if (Elite::Distance(agentPos, target) <= distance)
+		{
+			for (bool corner : CornersBool)
+			{
+				if (corner)
+				{
+					continue;
+				}
+
+				corner = true;
+				return;
+			}
+		}
+
+		Checked = std::all_of(CornersBool.begin(), CornersBool.end(), [](bool v) { return v; });
+	}*/
+
+};
+
 struct EnemyInfo
 {
 	eEnemyType Type;
