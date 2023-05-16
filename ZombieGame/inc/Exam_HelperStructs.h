@@ -125,22 +125,29 @@ struct HouseSearch : public HouseInfo
 		this->Center = hi.Center;
 		this->Size = hi.Size;
 
+		float wallThickness{ 5.f };
+
 		Corner = 
 		{
-			{ Center - Size / 4.5f },
+			/*{ Center - Size / 4.5f },
 			{ Center.x - Size.x / 4.5f, Center.y + Size.y / 4.5f },
 			{ Center + Size / 4.5f },
 			{ Center.x + Size.x / 4.5f, Center.y - Size.y / 4.5f },
-			{ Center - Size / 2.f }
+			{ Center - Size / 2.f }*/
+
+
+			{ Center + Elite::Vector2{ Size.x / 2.f - wallThickness,Size.y / 2.f - wallThickness} },
+			{ Center + Elite::Vector2{ -Size.x / 2.f + wallThickness,Size.y / 2.f - wallThickness} },
+			{ Center + Elite::Vector2{ -Size.x / 2.f + wallThickness,-Size.y / 2.f + wallThickness } },
+			{ Center + Elite::Vector2{ Size.x / 2.f - wallThickness,-Size.y / 2.f + wallThickness } },
+			//{ Center + Size }
 		};
 
-		Exit = { Center - Size / 2.f };
 	}
 
 	std::vector<bool> CornersBool{ false, false, false, false };
 	bool Checked{ false };
 	std::vector<Elite::Vector2> Corner{};
-	Elite::Vector2 Exit{};
 
 	Elite::Vector2 GetCornerPosition(int i)
 	{

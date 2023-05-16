@@ -132,13 +132,14 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					{
 						// checks if its not in cell.
 					new BehaviorInvertConditional(&BT_Conditions::IsInCell),
+					//new BehaviorConditional(&BT_Conditions::IsInCell),
 						new BehaviorSelector
 						(
 							{
 								// Seek to nearest cell.
 							new BehaviorAction(&BT_Behaviors::SeekToNearestCell),
 								// Wander.
-							new BehaviorAction(&BT_Behaviors::Wander)
+							//new BehaviorAction(&BT_Behaviors::Wander)
 							}
 						)
 					}
@@ -455,8 +456,10 @@ void Plugin::UpdateHousesInFOV() const
 		{
 			m_pHousesSearch->emplace_back(HouseSearch{ housesInFOV.at(0) });
 		}
-	}
 
+		//std::cout << m_pHousesSearch->back().Checked << std::endl;
+
+	}
 
 	m_pBehaviorTree->GetBlackboard()->ChangeData("housesInFOV", m_pHousesInFov);
 	m_pBehaviorTree->GetBlackboard()->ChangeData("housesSearch", m_pHousesSearch);
