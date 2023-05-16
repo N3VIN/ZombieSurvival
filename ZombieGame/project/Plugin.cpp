@@ -108,31 +108,53 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					new BehaviorSequence
 					(
 					{
-								// checks if inside house.
-								new BehaviorConditional(&BT_Conditions::IsInsideHouse),
-								new BehaviorAction(&BT_Behaviors::SearchHouse),
-								// Wander inside house.
-								//new BehaviorAction(&BT_Behaviors::Wander)
-								//new BehaviorAction(&BT_Behaviors::ExitHouse)
-							}
-						),
+							// checks if house is in FOV.
+							new BehaviorConditional(&BT_Conditions::IsHouseInView),
+							// seek house.
+							//new BehaviorAction(&BT_Behaviors::SeekHouse)
+							new BehaviorAction(&BT_Behaviors::SearchHouse)
+						}
+					),
+
+					//new BehaviorSequence
+					//(
+					//{
+					//			// checks if inside house.
+					//			new BehaviorConditional(&BT_Conditions::IsInsideHouse),
+					//			new BehaviorAction(&BT_Behaviors::SearchHouse),
+					//			// Wander inside house.
+					//			//new BehaviorAction(&BT_Behaviors::Wander)
+					//			//new BehaviorAction(&BT_Behaviors::ExitHouse)
+					//		}
+					//	),
 
 					new BehaviorSequence
 					(
 					{
-							// checks if house is in FOV.
-							new BehaviorConditional(&BT_Conditions::IsHouseInView),
-							// seek house.
-							new BehaviorAction(&BT_Behaviors::SeekHouse)
-						}
-					),
+								// checks if inside house.
+								new BehaviorInvertConditional(&BT_Conditions::IsInsideHouse),
+								//new BehaviorAction(&BT_Behaviors::SearchHouse),
+								// Wander inside house.
+								//new BehaviorAction(&BT_Behaviors::Wander)
+								new BehaviorAction(&BT_Behaviors::ExitHouse)
+							}
+						),
+
+					//new BehaviorSequence
+					//(
+					//{
+					//		// checks if house is in FOV.
+					//		new BehaviorConditional(&BT_Conditions::IsHouseInView),
+					//		// seek house.
+					//		new BehaviorAction(&BT_Behaviors::SeekHouse)
+					//	}
+					//),
 
 					new BehaviorSequence
 				(
 					{
 						// checks if its not in cell.
 					new BehaviorInvertConditional(&BT_Conditions::IsInCell),
-					//new BehaviorConditional(&BT_Conditions::IsInCell),
 						new BehaviorSelector
 						(
 							{

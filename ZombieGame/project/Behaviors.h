@@ -160,7 +160,7 @@ namespace BT_Conditions
 
 		if (pHousesSearched->back().Checked)
 		{
-			return false; // idk
+			return false;
 		}
 
 		if (agentInfo.IsInHouse)
@@ -298,12 +298,12 @@ namespace BT_Conditions
 
 		for (int i = 0; i < pathCells.size(); ++i)
 		{
-			if (Elite::Distance(agentInfo.Position, pathCells.at(i).center) <= 15.f)
+			if (Elite::Distance(agentInfo.Position, pathCells.at(i).center) <= 20.f)
 			{
 				pCellSpace->CheckedCellInPath(i);
 				return true;
 			}
-			pInterface->Draw_Circle(pathCells.at(i).center, 15.f, Elite::Vector3{ 0,1,1 });
+			pInterface->Draw_Circle(pathCells.at(i).center, 20.f, Elite::Vector3{ 0,1,1 });
 
 		}
 
@@ -543,14 +543,6 @@ namespace BT_Behaviors
 					house.Checked = true;
 					//return Elite::BehaviorState::Success;
 				}
-				//if (counter >= 4)
-				//{
-				//	counter = 0;
-				//	//house.Checked = true;
-				//	//return Elite::BehaviorState::Success;
-				//}
-				
-
 			}
 		}
 
@@ -569,44 +561,58 @@ namespace BT_Behaviors
 
 	}
 
-	//Elite::BehaviorState ExitHouse(Elite::Blackboard* pBlackboard)
-	//{
-	//	IExamInterface* pInterface{ nullptr };
-	//	SteeringPlugin_Output* pSteering{};
-	//	std::vector<HouseSearch>* pHousesSearch{ nullptr };
+	Elite::BehaviorState ExitHouse(Elite::Blackboard* pBlackboard)
+	{
+		IExamInterface* pInterface{ nullptr };
+		SteeringPlugin_Output* pSteering{};
+		std::vector<HouseSearch>* pHousesSearch{ nullptr };
 
-	//	if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
-	//	{
-	//		return Elite::BehaviorState::Failure;
-	//	}
+		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
 
-	//	if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-	//	{
-	//		return Elite::BehaviorState::Failure;
-	//	}
+		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
 
-	//	if (!pBlackboard->GetData("housesSearch", pHousesSearch) || pHousesSearch == nullptr)
-	//	{
-	//		return Elite::BehaviorState::Failure;
-	//	}
+		if (!pBlackboard->GetData("housesSearch", pHousesSearch) || pHousesSearch == nullptr)
+		{
+			return Elite::BehaviorState::Failure;
+		}
 
-	//	const auto agentInfo = pInterface->Agent_GetInfo();
+		if (pHousesSearch->empty())
+		{
+			return Elite::BehaviorState::Failure;
 
-	//	//Elite::Vector2 target = pHousesSearch->back().Exit;
+		}
 
+		const auto agentInfo = pInterface->Agent_GetInfo();
 
-	//	const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+		//Elite::Vector2 target = pHousesSearch->back().GetCornerPosition(4);
+		Elite::Vector2 target = pHousesSearch->back().Exit;
 
-	//	pInterface->Draw_Circle(target, 2.f, Elite::Vector3{ 0, 0,1 });
+		const float distance{ 1.5f };
+		if (Elite::Distance(agentInfo.Position, target) <= distance)
+		{
+			return Elite::BehaviorState::Success;
 
-	//	pSteering->AutoOrient = false;
-	//	pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
-	//	pSteering->LinearVelocity.Normalize();
-	//	pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-	//	pSteering->RunMode = false;
+		}
 
-	//	return Elite::BehaviorState::Success;
-	//}
+		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
+
+		pInterface->Draw_Circle(target, 2.f, Elite::Vector3{ 0, 0,1 });
+
+		pSteering->AutoOrient = true;
+		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
+		pSteering->LinearVelocity.Normalize();
+		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
+		pSteering->RunMode = false;
+
+		return Elite::BehaviorState::Success;
+
+	}
 
 	Elite::BehaviorState Wander(Elite::Blackboard* pBlackboard)
 	{
