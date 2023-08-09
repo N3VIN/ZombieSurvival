@@ -135,7 +135,7 @@ struct HouseSearch : public HouseInfo
 			{ Center + Elite::Vector2{ -Size.x / 2.f + wallThickness,Size.y / 2.f - wallThickness} },
 			{ Center + Elite::Vector2{ -Size.x / 2.f + wallThickness,-Size.y / 2.f + wallThickness } },
 			{ Center + Elite::Vector2{ Size.x / 2.f - wallThickness,-Size.y / 2.f + wallThickness } },
-			//{ Center +  Size / 1.5f  }
+			{ Center }
 		};
 
 		Exit = Center + Size / 1.5f;

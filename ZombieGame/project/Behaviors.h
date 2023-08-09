@@ -298,12 +298,12 @@ namespace BT_Conditions
 
 		for (int i = 0; i < pathCells.size(); ++i)
 		{
-			if (Elite::Distance(agentInfo.Position, pathCells.at(i).center) <= 20.f)
+			if (Elite::Distance(agentInfo.Position, pathCells.at(i).center) <= 10.f)
 			{
 				pCellSpace->CheckedCellInPath(i);
 				return true;
 			}
-			pInterface->Draw_Circle(pathCells.at(i).center, 20.f, Elite::Vector3{ 0,1,1 });
+			pInterface->Draw_Circle(pathCells.at(i).center, 10.f, Elite::Vector3{ 0,1,1 });
 
 		}
 
@@ -537,7 +537,7 @@ namespace BT_Behaviors
 			if (Elite::Distance(agentInfo.Position, target) <= distance)
 			{
 				counter++;
-				if (counter >= 4)
+				if (counter >= 5)
 				{
 					counter = 0;
 					house.Checked = true;
@@ -548,13 +548,32 @@ namespace BT_Behaviors
 
 		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
+		/*if (agentInfo.Health <= 4.f || agentInfo.Energy <= 4.f)
+		{
+			pSteering->RunMode = true;
+		}
+		else
+		{
+			pSteering->RunMode = false;
+		}*/
+
+		if (agentInfo.Stamina >= 7.f)
+		{
+			pSteering->RunMode = true;
+		}
+
+		if (agentInfo.Stamina == 0.f)
+		{
+			pSteering->RunMode = false;
+		}
+
 		pInterface->Draw_Circle(target, 2.f, Elite::Vector3{ 0, 1,0 });
 
 		pSteering->AutoOrient = true;
 		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
 		pSteering->LinearVelocity.Normalize();
 		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-		pSteering->RunMode = false;
+		//pSteering->RunMode = false;
 
 		return Elite::BehaviorState::Success;
 		//return Elite::BehaviorState::Running;
@@ -943,6 +962,8 @@ namespace BT_Behaviors
 		pBittenTimer->ResetTimer();
 		pBittenTimer->Disable();
 
+		//std::cout << "black sheep mehhhh...." << std::endl;
+
 		const auto agentInfo = pInterface->Agent_GetInfo();
 
 		/*if (agentInfo.IsInHouse)
@@ -956,14 +977,24 @@ namespace BT_Behaviors
 
 		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
 
-		if (agentInfo.Stamina <= 3.f)
+		
+		/*if (agentInfo.Health <= 4.f || agentInfo.Energy <= 4.f)
 		{
-			pSteering->RunMode = false;
-
+			pSteering->RunMode = true;
 		}
 		else
 		{
+			pSteering->RunMode = false;
+		}*/
+
+		if (agentInfo.Stamina >= 7.f)
+		{
 			pSteering->RunMode = true;
+		}
+
+		if (agentInfo.Stamina == 0.f)
+		{
+			pSteering->RunMode = false;
 		}
 
 		pSteering->AutoOrient = true;

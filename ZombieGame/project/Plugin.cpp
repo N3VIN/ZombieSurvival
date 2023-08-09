@@ -37,7 +37,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 	m_pHousesSearch = new std::vector<HouseSearch>();
 	m_pInventory = new Inventory(m_pInterface);
 	m_pBittenTimer = new Timer(2.5f, false);
-	m_pGridCells = new CellSpace(m_pInterface->World_GetInfo().Dimensions.x, m_pInterface->World_GetInfo().Dimensions.y, 14, 14);
+	m_pGridCells = new CellSpace(m_pInterface->World_GetInfo().Dimensions.x, m_pInterface->World_GetInfo().Dimensions.y, 16, 16);
 
 
 	Blackboard* pBlackboard = new Blackboard();
@@ -78,7 +78,7 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 											}
 										),
 									// turn around and flee.
-									new BehaviorAction(&BT_Behaviors::TurnAround)
+									new BehaviorAction(&BT_Behaviors::TurnAround) // double check if this does any shit.
 								}
 							)
 							}
@@ -128,17 +128,17 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					//		}
 					//	),
 
-					new BehaviorSequence
-					(
-					{
-								// checks if inside house.
-								new BehaviorInvertConditional(&BT_Conditions::IsInsideHouse),
-								//new BehaviorAction(&BT_Behaviors::SearchHouse),
-								// Wander inside house.
-								//new BehaviorAction(&BT_Behaviors::Wander)
-								new BehaviorAction(&BT_Behaviors::ExitHouse)
-							}
-						),
+					//new BehaviorSequence
+					//(
+					//{
+					//			// checks if inside house.
+					//			new BehaviorInvertConditional(&BT_Conditions::IsInsideHouse),
+					//			//new BehaviorAction(&BT_Behaviors::SearchHouse),
+					//			// Wander inside house.
+					//			//new BehaviorAction(&BT_Behaviors::Wander)
+					//			new BehaviorAction(&BT_Behaviors::ExitHouse)
+					//		}
+					//	),
 
 					//new BehaviorSequence
 					//(
@@ -150,22 +150,30 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 					//	}
 					//),
 
+	//			new BehaviorSequence
+	//				(
+	//{
+	//						// checks if its in cell. temp ok??
+	//						new BehaviorConditional(&BT_Conditions::IsInCell),
+	//						{
+	//						// Seek to nearest cell.
+	//						new BehaviorAction(&BT_Behaviors::SeekToNearestCell),
+	//					}
+	//				}
+	//			),
+
 					new BehaviorSequence
-				(
-					{
+					(
+	{
 						// checks if its not in cell.
-					new BehaviorInvertConditional(&BT_Conditions::IsInCell),
-						new BehaviorSelector
-						(
-							{
-								// Seek to nearest cell.
+						new BehaviorInvertConditional(&BT_Conditions::IsInCell),
+						{
+							// Seek to nearest cell.
 							new BehaviorAction(&BT_Behaviors::SeekToNearestCell),
-								// Wander.
-							//new BehaviorAction(&BT_Behaviors::Wander)
-							}
-						)
+						}
 					}
 				),
+
 			}
 		),
 			new BehaviorSelector
@@ -258,8 +266,8 @@ void Plugin::InitGameDebugParams(GameDebugParams& params)
 	params.SpawnZombieOnRightClick = true;
 	params.PrintDebugMessages = true;
 	params.ShowDebugItemNames = true;
-	params.Seed = 36;
-	//params.Seed = 12345;
+	//params.Seed = 36;
+	params.Seed = 664546;
 }
 
 //Only Active in DEBUG Mode
