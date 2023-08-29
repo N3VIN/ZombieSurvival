@@ -116,52 +116,6 @@ void Plugin::Initialize(IBaseInterface* pInterface, PluginInfo& info)
 						}
 					),
 
-					//new BehaviorSequence
-					//(
-					//{
-					//			// checks if inside house.
-					//			new BehaviorConditional(&BT_Conditions::IsInsideHouse),
-					//			new BehaviorAction(&BT_Behaviors::SearchHouse),
-					//			// Wander inside house.
-					//			//new BehaviorAction(&BT_Behaviors::Wander)
-					//			//new BehaviorAction(&BT_Behaviors::ExitHouse)
-					//		}
-					//	),
-
-					//new BehaviorSequence
-					//(
-					//{
-					//			// checks if inside house.
-					//			new BehaviorInvertConditional(&BT_Conditions::IsInsideHouse),
-					//			//new BehaviorAction(&BT_Behaviors::SearchHouse),
-					//			// Wander inside house.
-					//			//new BehaviorAction(&BT_Behaviors::Wander)
-					//			new BehaviorAction(&BT_Behaviors::ExitHouse)
-					//		}
-					//	),
-
-					//new BehaviorSequence
-					//(
-					//{
-					//		// checks if house is in FOV.
-					//		new BehaviorConditional(&BT_Conditions::IsHouseInView),
-					//		// seek house.
-					//		new BehaviorAction(&BT_Behaviors::SeekHouse)
-					//	}
-					//),
-
-	//			new BehaviorSequence
-	//				(
-	//{
-	//						// checks if its in cell. temp ok??
-	//						new BehaviorConditional(&BT_Conditions::IsInCell),
-	//						{
-	//						// Seek to nearest cell.
-	//						new BehaviorAction(&BT_Behaviors::SeekToNearestCell),
-	//					}
-	//				}
-	//			),
-
 					new BehaviorSequence
 					(
 	{
@@ -389,8 +343,6 @@ void Plugin::Render(float dt) const
 			m_pInterface->Draw_Polygon(cell.GetRectPoints().data(), 4, { 1.f, 0.f, 0.f });
 		}
 	}
-
-	//m_pInterface->Draw_SolidCircle(m_pInterface->World_GetInfo().Center, 325, { 0,0 }, { 0, 0, 1 });
 }
 
 vector<HouseInfo> Plugin::GetHousesInFOV() const

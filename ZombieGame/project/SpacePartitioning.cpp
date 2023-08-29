@@ -51,18 +51,6 @@ CellSpace::CellSpace(float width, float height, int rows, int cols)
 				(j == 2 && i <= 2 && i >= -2) ||		   // right
 				(j == -4 && i <= 3 && i >= -3) ||		   // left
 				(i >= -1 && i <= 0 && j >= -1 && j <= 0)) // center
-
-			//if (//(abs(j) == 3 && i <= 3 && i >= -3) ||	   // sides
-			//	 //abs(i) == 3 && j <= 3 && j >= -3 ||	   // top
-			//	 (i == -4 && j <= 3 && j >= -4) ||		   // bottom
-			//     (i == 2 && j <= 1 && j >= -2)  ||		   // top
-			//     (j == 2 && i <= 2 && i >= -2)  ||		   // right
-			//     //(j == -4 && i <= 3 && i >= -3) ||		   // left
-			//     (i >= -1 && i <= 0 && j >= -1 && j <= 0)) // center
-
-			/*if ((abs(j) == 3 && i <= 3 && i >= -3) ||
-				abs(i) == 3 && j <= 3 && j >= -3 ||
-				(i >= -1 && i <= 0 && j >= -1 && j <= 0))*/ 
 			{
 				m_Path.push_back(cell);
 			}

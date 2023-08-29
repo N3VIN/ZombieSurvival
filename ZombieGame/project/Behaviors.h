@@ -127,50 +127,6 @@ namespace BT_Conditions
 		return false;
 	}
 
-	bool IsInsideHouse(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-		std::vector<HouseSearch>* pHousesSearched{ nullptr };
-		std::vector<HouseInfo>* pHouseInfos{ nullptr };
-
-
-		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-		{
-			return false;
-		}
-
-		if (!pBlackboard->GetData("housesInFOV", pHouseInfos) || pHouseInfos == nullptr)
-		{
-			return false;
-		}
-
-		if (!pBlackboard->GetData("housesSearch", pHousesSearched) || pHousesSearched == nullptr)
-		{
-			return false;
-		}
-
-		const auto agentInfo = pInterface->Agent_GetInfo();
-
-		//auto house = pHousesSearched->back();
-
-		if (pHousesSearched->empty())
-		{
-			return false;
-		}
-
-		if (pHousesSearched->back().Checked)
-		{
-			return false;
-		}
-
-		if (agentInfo.IsInHouse)
-		{
-			return true;
-		}
-
-		return false;
-	}
-
 	bool IsGunAvailable(Elite::Blackboard* pBlackboard)
 	{
 		Inventory* pInventory{ nullptr };
@@ -298,12 +254,12 @@ namespace BT_Conditions
 
 		for (int i = 0; i < pathCells.size(); ++i)
 		{
-			if (Elite::Distance(agentInfo.Position, pathCells.at(i).center) <= 10.f)
+			if (Elite::Distance(agentInfo.Position, pathCells.at(i).center) <= 2.5f)
 			{
 				pCellSpace->CheckedCellInPath(i);
 				return true;
 			}
-			pInterface->Draw_Circle(pathCells.at(i).center, 10.f, Elite::Vector3{ 0,1,1 });
+			pInterface->Draw_Circle(pathCells.at(i).center, 2.5f, Elite::Vector3{ 0,1,1 });
 
 		}
 
@@ -320,64 +276,6 @@ namespace BT_Conditions
 
 namespace BT_Behaviors
 {
-
-	Elite::BehaviorState FleeFromEnemy(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-		SteeringPlugin_Output* pSteering{};
-		std::vector<EnemyInfo>* pEnemyInfos{ nullptr };
-		Timer* pBittenTimer{ nullptr };
-
-
-		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("enemiesInFOV", pEnemyInfos) || pEnemyInfos == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-
-		if (!pBlackboard->GetData("bittenTimer", pBittenTimer) || pBittenTimer == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		pBittenTimer->ResetTimer();
-		pBittenTimer->Disable();
-
-		const auto agentInfo = pInterface->Agent_GetInfo();
-
-		EnemyInfo enemy{};
-
-		for (int i{0}; i < pEnemyInfos->size(); ++i)
-		{
-			enemy = pEnemyInfos->at(i);
-		}
-
-		const Elite::Vector2 fleeDirection = (enemy.Location - agentInfo.Position);
-
-		const auto target = enemy.Location - fleeDirection.GetNormalized() * 20.f;
-
-		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
-
-		pSteering->AutoOrient = false;
-		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
-		pSteering->LinearVelocity.Normalize();
-		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-		pSteering->RunMode = false;
-
-		return Elite::BehaviorState::Success;
-
-	}
-
 	Elite::BehaviorState TurnAround(Elite::Blackboard* pBlackboard)
 	{
 		IExamInterface* pInterface{ nullptr };
@@ -429,7 +327,8 @@ namespace BT_Behaviors
 		backDirection.Normalize();
 
 		pSteering->AutoOrient = false;
-		const float agentRotation{ agentInfo.Orientation + 0.5f * float(M_PI) };
+		//const float agentRotation{ agentInfo.Orientation * float(M_PI) };
+		const float agentRotation{  float(M_PI) * 2 };
 
 		const Elite::Vector2 agentDirection{ std::cosf(agentRotation),std::sinf(agentRotation) };
 		pSteering->AngularVelocity = (backDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
@@ -445,59 +344,6 @@ namespace BT_Behaviors
 		}
 
 		return Elite::BehaviorState::Success;
-	}
-
-	Elite::BehaviorState SeekHouse(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-		SteeringPlugin_Output* pSteering{};
-		std::vector<HouseInfo>* pHouseInfos{ nullptr };
-		std::vector<HouseSearch>* pHousesSearch{ nullptr };
-
-		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("housesInFOV", pHouseInfos) || pHouseInfos == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("housesSearch", pHousesSearch) || pHousesSearch == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		const auto agentInfo = pInterface->Agent_GetInfo();
-
-		auto& house = pHousesSearch->back();
-
-		const auto target = house.Center;
-
-		auto targetDirection = target - agentInfo.Position;
-
-		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
-
-		pSteering->AutoOrient = false;
-		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
-		pSteering->LinearVelocity.Normalize();
-		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-		pSteering->RunMode = false;
-
-		targetDirection.Normalize();
-		const float agentRotation{ agentInfo.Orientation + 0.5f * float(M_PI) };
-
-		const Elite::Vector2 agentDirection{ std::cosf(agentRotation),std::sinf(agentRotation) };
-		pSteering->AngularVelocity = (targetDirection.Dot(agentDirection)) * agentInfo.MaxAngularSpeed;
-
-		return Elite::BehaviorState::Success;
-
 	}
 
 	Elite::BehaviorState SearchHouse(Elite::Blackboard* pBlackboard)
@@ -580,161 +426,6 @@ namespace BT_Behaviors
 
 	}
 
-	Elite::BehaviorState ExitHouse(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-		SteeringPlugin_Output* pSteering{};
-		std::vector<HouseSearch>* pHousesSearch{ nullptr };
-
-		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("housesSearch", pHousesSearch) || pHousesSearch == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (pHousesSearch->empty())
-		{
-			return Elite::BehaviorState::Failure;
-
-		}
-
-		const auto agentInfo = pInterface->Agent_GetInfo();
-
-		//Elite::Vector2 target = pHousesSearch->back().GetCornerPosition(4);
-		Elite::Vector2 target = pHousesSearch->back().Exit;
-
-		const float distance{ 1.5f };
-		if (Elite::Distance(agentInfo.Position, target) <= distance)
-		{
-			return Elite::BehaviorState::Success;
-
-		}
-
-		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
-
-		pInterface->Draw_Circle(target, 2.f, Elite::Vector3{ 0, 0,1 });
-
-		pSteering->AutoOrient = true;
-		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
-		pSteering->LinearVelocity.Normalize();
-		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-		pSteering->RunMode = false;
-
-		return Elite::BehaviorState::Success;
-
-	}
-
-	Elite::BehaviorState Wander(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-		SteeringPlugin_Output* pSteering{};
-		Timer* pBittenTimer{ nullptr };
-
-
-		if (!pBlackboard->GetData("steering", pSteering) || pSteering == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("interface", pInterface) || pInterface == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("bittenTimer", pBittenTimer) || pBittenTimer == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		pBittenTimer->ResetTimer();
-		pBittenTimer->Disable();
-
-		const auto agentInfo = pInterface->Agent_GetInfo();
-
-		float wanderAngle{ agentInfo.Orientation };
-		const float randomAngle{ Elite::ToRadians(static_cast<float>(rand() % static_cast<int>(Elite::ToDegrees(10.f)))) };
-		float sign{};
-		if (rand() % 2 == 0)
-		{
-			sign = -1;
-		}
-		else
-		{
-			sign = 1;
-		}
-		const float nextAngle{ wanderAngle + (sign * randomAngle) };
-		wanderAngle = nextAngle;
-
-		const Elite::Vector2 circleCenter{
-			agentInfo.Position + (Elite::Vector2{
-				std::cosf(agentInfo.Orientation), std::sinf(agentInfo.Orientation)
-			} * 10.f)
-		};
-		const Elite::Vector2 target{
-			circleCenter.x + (std::cosf(wanderAngle) * 7.f), circleCenter.y + (std::sinf(wanderAngle) * 7.f)
-		};
-		const Elite::Vector2 targetVector{ target - agentInfo.Position };
-
-		const auto nextTargetPos = pInterface->NavMesh_GetClosestPathPoint(target);
-
-		pSteering->AutoOrient = true;
-		pSteering->LinearVelocity = nextTargetPos - agentInfo.Position;
-		pSteering->LinearVelocity.Normalize();
-		pSteering->LinearVelocity *= agentInfo.MaxLinearSpeed;
-		pSteering->RunMode = false;
-
-		pInterface->Draw_Circle(circleCenter, 7.f, Elite::Vector3{ 0,1,0 });
-		pInterface->Draw_Direction(agentInfo.Position, targetVector, 10.f, Elite::Vector3{ 0,1,0 });
-
-		return Elite::BehaviorState::Success;
-	}
-
-	Elite::BehaviorState AddToHousesChecked(Elite::Blackboard* pBlackboard)
-	{
-		IExamInterface* pInterface{ nullptr };
-		std::vector<HouseInfo>* pHouseInfos{ nullptr };
-		std::vector<HouseInfo>* pHousesChecked{ nullptr };
-
-		if (!pBlackboard->GetData("housesInFOV", pHouseInfos) || pHouseInfos == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		if (!pBlackboard->GetData("housesChecked", pHousesChecked) || pHousesChecked == nullptr)
-		{
-			return Elite::BehaviorState::Failure;
-		}
-
-		for (int i{ 0 }; i < pHouseInfos->size(); ++i)
-		{
-			if (pHousesChecked->empty())
-			{
-				pHousesChecked->push_back(pHouseInfos->at(i));
-
-			}
-
-			for (int j{ 0 }; j < pHousesChecked->size(); ++j)
-			{
-				if (pHouseInfos->at(i).Center != pHousesChecked->at(j).Center)
-				{
-					pHousesChecked->push_back(pHouseInfos->at(i));
-				}
-			}
-
-		}
-
-		return Elite::BehaviorState::Success;
-
-	}
 
 	Elite::BehaviorState PickupItemsFOV(Elite::Blackboard* pBlackboard)
 	{
@@ -829,7 +520,7 @@ namespace BT_Behaviors
 
 		Elite::Vector2 enemyDirection = (enemy.Location - agentInfo.Position);
 		enemyDirection.Normalize();
-		const float agentRotation{ agentInfo.Orientation + 0.5f * float(M_PI) };
+		const float agentRotation{ float(M_PI) * 2 };
 
 		const auto orientation = std::abs(agentInfo.Orientation - std::atan2(enemyDirection.y, enemyDirection.x));
 		const Elite::Vector2 agentDirection{ std::cosf(agentRotation),std::sinf(agentRotation) };
